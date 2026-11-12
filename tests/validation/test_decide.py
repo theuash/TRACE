@@ -83,6 +83,24 @@ def test_explainer_is_called_once_per_failed_check():
     assert CALLS["explain_anomaly"] == first
 
 
+def test_missing_core_metric_is_red_and_carries_no_value():
+    from validation.engine import run_validations
+
+    reset_explain_cache()
+    result = build_extraction()
+    keep = [m for m in result.metrics if m.metric not in (Metric.REVENUE, Metric.TOTAL_ASSETS)]
+    result = result.model_copy(update={"metrics": keep})
+
+    decision = decide(result, run_validations(result, T), T)
+    missing = [e for e in decision.escalations if e.metric in (Metric.REVENUE, Metric.TOTAL_ASSETS)]
+
+    assert {e.metric for e in missing} == {Metric.REVENUE, Metric.TOTAL_ASSETS}
+    assert all(e.tier is RiskTier.RED for e in missing)
+    assert all(e.value is None for e in missing)  # absence is never 0
+    assert all(e.reasons[0].kind.value == "missing_value" for e in missing)
+    assert not set(e.review_id for e in missing) & set(decision.auto_approved_ids)
+
+
 def test_green_values_are_auto_approved():
     from validation.engine import run_validations
 
