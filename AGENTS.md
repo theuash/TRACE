@@ -53,9 +53,11 @@ Until teammates finish: P2 sets `USE_FAKES=true` (uses `workflow/fakes.py`); P3 
 
 1. **XBRL is verification only.** Extraction reads the 10-K HTML. Only `verification/` may call Company Facts.
 2. **SEC etiquette.** `SEC_USER_AGENT` on every request, max 8 req/s, cache everything in `data/`, cache-first.
-3. **Deterministic first.** Parsing, confidence, validation, decisions are plain Python. The LLM does **not**
-   retrieve filings and does **not** extract the 8 core metrics; its one job is `explain_anomaly`. All LLM calls go
-   through `llm/client.py`.
+3. **Deterministic first, model second.** Parsing, confidence, validation and decisions are plain Python.
+   The LLM does **not** retrieve filings. In extraction the table parser is primary and independent; the LLM
+   is an optional second reader whose only output is an agreement signal, and a value that only the model
+   found is capped at confidence 0.70 and therefore cannot auto-approve. Its other job is `explain_anomaly`.
+   All LLM calls go through `llm/client.py`.
 4. **Resume safety.** A LangGraph node that calls `interrupt()` re-runs from its first line on resume. So the
    interrupt lives in its own node, with no side effects before it. Every side effect uses the idempotency key
    `(run_id, step, item_id)` and is skipped if already done.

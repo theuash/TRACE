@@ -65,10 +65,18 @@ result, and is never asked of a model — otherwise the calibration chart proves
 
 ## Where the LLM sits
 
-Retrieval (EDGAR to file) and extraction (file to metrics) are plain Python: httpx plus a table parser.
-**One** function calls a model: `llm.explain.explain_anomaly`. It writes the single plain-English
-sentence on a failed check and returns a deterministic fallback string when no model is reachable. It runs
-inside `decide`, before the pause, and its output is cached so a resume never calls it twice.
+Retrieval (EDGAR to file) is plain Python: httpx, cache-first. Extraction is a deterministic table
+parser first: label aliases read the located income statement, balance sheet and cash flow rows.
+
+Then an optional **second reader** (`llm.second_reader`) is handed only those located table rows and
+returns the printed cell text. The parser stays primary; the model buys label coverage the alias
+table misses. When both readers agree the value is clean; when they disagree, or only the model
+found the value, the value cannot auto-approve (confidence is capped at 0.70). The model never sees
+the filing, never picks a tier, and never supplies the only copy of a value above that cap.
+
+`llm.explain.explain_anomaly` remains the other call site: one plain-English sentence on a failed
+check, with a deterministic fallback when no model is reachable, run inside `decide` before the
+pause and cached so a resume never calls it twice. Both call sites go through `llm/client.py`.
 
 ## The main thing
 

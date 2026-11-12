@@ -1,0 +1,642 @@
+{
+  "filing": {
+    "company": {
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "cik": "0000320193"
+    },
+    "accession_number": "0000320193-26-000026",
+    "filing_date": "2026-11-03",
+    "fiscal_year": 2026,
+    "period_end": "2026-09-26",
+    "primary_document": "aapl-20260926.htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm",
+    "local_path": "data\\filings\\AAPL_0000320193-26-000026.htm"
+  },
+  "metrics": [
+    {
+      "ticker": "AAPL",
+      "metric": "cash_and_equivalents",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "36305000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "36,305",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Cash and cash equivalents | 36,305 | 35,934",
+        "matched_text": "36,305",
+        "location": "balance sheet, row 'Cash and cash equivalents'",
+        "table_index": 24,
+        "row_label": "Cash and cash equivalents",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "total_assets",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "404548000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "404,548",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total assets | 404,548 | 359,241",
+        "matched_text": "404,548",
+        "location": "balance sheet, row 'Total assets'",
+        "table_index": 24,
+        "row_label": "Total assets",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "revenue",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "478834000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "478,834",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total net sales | 478,834 | 416,161 | 391,035",
+        "matched_text": "478,834",
+        "location": "income statement, row 'Total net sales'",
+        "table_index": 22,
+        "row_label": "Total net sales",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "total_liabilities",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "292455000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "292,455",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total liabilities | 292,455 | 285,508",
+        "matched_text": "292,455",
+        "location": "balance sheet, row 'Total liabilities'",
+        "table_index": 24,
+        "row_label": "Total liabilities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "shareholders_equity",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "112093000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "112,093",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total shareholders\u2019 equity | 112,093 | 73,733",
+        "matched_text": "112,093",
+        "location": "balance sheet, row 'Total shareholders\u2019 equity'",
+        "table_index": 24,
+        "row_label": "Total shareholders\u2019 equity",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "gross_profit",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "233602000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "233,602",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Gross margin | 233,602 | 195,201 | 180,683",
+        "matched_text": "233,602",
+        "location": "income statement, row 'Gross margin'",
+        "table_index": 22,
+        "row_label": "Gross margin",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "operating_income",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "158063000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "158,063",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Operating income | 158,063 | 133,050 | 123,216",
+        "matched_text": "158,063",
+        "location": "income statement, row 'Operating income'",
+        "table_index": 22,
+        "row_label": "Operating income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "net_income",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "132175000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "132,175",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Net income | 132,175 | 112,010 | 93,736",
+        "matched_text": "132,175",
+        "location": "income statement, row 'Net income'",
+        "table_index": 22,
+        "row_label": "Net income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "diluted_eps",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "8.98",
+      "unit": "USD/share",
+      "scale": 1,
+      "raw_text": "8.98",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Diluted | 8.98 | 7.46 | 6.08",
+        "matched_text": "8.98",
+        "location": "income statement, row 'Diluted'",
+        "table_index": 22,
+        "row_label": "Diluted",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "operating_cash_flow",
+      "fiscal_year": 2026,
+      "period_end": "2026-09-26",
+      "period_start": null,
+      "value": "145097000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "145,097",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Cash generated by operating activities | 145,097 | 111,482 | 118,254",
+        "matched_text": "145,097",
+        "location": "cash flow, row 'Cash generated by operating activities'",
+        "table_index": 26,
+        "row_label": "Cash generated by operating activities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    }
+  ],
+  "prior_metrics": [
+    {
+      "ticker": "AAPL",
+      "metric": "cash_and_equivalents",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "35934000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "35,934",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Cash and cash equivalents | 36,305 | 35,934",
+        "matched_text": "35,934",
+        "location": "balance sheet, row 'Cash and cash equivalents'",
+        "table_index": 24,
+        "row_label": "Cash and cash equivalents",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "total_assets",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "359241000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "359,241",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total assets | 404,548 | 359,241",
+        "matched_text": "359,241",
+        "location": "balance sheet, row 'Total assets'",
+        "table_index": 24,
+        "row_label": "Total assets",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "revenue",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "416161000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "416,161",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total net sales | 478,834 | 416,161 | 391,035",
+        "matched_text": "416,161",
+        "location": "income statement, row 'Total net sales'",
+        "table_index": 22,
+        "row_label": "Total net sales",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "total_liabilities",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "285508000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "285,508",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total liabilities | 292,455 | 285,508",
+        "matched_text": "285,508",
+        "location": "balance sheet, row 'Total liabilities'",
+        "table_index": 24,
+        "row_label": "Total liabilities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "shareholders_equity",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "73733000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "73,733",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total shareholders\u2019 equity | 112,093 | 73,733",
+        "matched_text": "73,733",
+        "location": "balance sheet, row 'Total shareholders\u2019 equity'",
+        "table_index": 24,
+        "row_label": "Total shareholders\u2019 equity",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "gross_profit",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "195201000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "195,201",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Gross margin | 233,602 | 195,201 | 180,683",
+        "matched_text": "195,201",
+        "location": "income statement, row 'Gross margin'",
+        "table_index": 22,
+        "row_label": "Gross margin",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "operating_income",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "133050000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "133,050",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Operating income | 158,063 | 133,050 | 123,216",
+        "matched_text": "133,050",
+        "location": "income statement, row 'Operating income'",
+        "table_index": 22,
+        "row_label": "Operating income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "net_income",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "112010000",
+      "unit": "USD",
+      "scale": 1000,
+      "raw_text": "112,010",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Net income | 132,175 | 112,010 | 93,736",
+        "matched_text": "112,010",
+        "location": "income statement, row 'Net income'",
+        "table_index": 22,
+        "row_label": "Net income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "diluted_eps",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "7.46",
+      "unit": "USD/share",
+      "scale": 1,
+      "raw_text": "7.46",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Diluted | 8.98 | 7.46 | 6.08",
+        "matched_text": "7.46",
+        "location": "income statement, row 'Diluted'",
+        "table_index": 22,
+        "row_label": "Diluted",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "AAPL",
+      "metric": "operating_cash_flow",
+      "fiscal_year": 2025,
+      "period_end": "2025-09-27",
+      "period_start": null,
+      "value": "111482000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "111,482",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Cash generated by operating activities | 145,097 | 111,482 | 118,254",
+        "matched_text": "111,482",
+        "location": "cash flow, row 'Cash generated by operating activities'",
+        "table_index": 26,
+        "row_label": "Cash generated by operating activities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    }
+  ],
+  "segments": [],
+  "warnings": []
+}

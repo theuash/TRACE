@@ -1,0 +1,642 @@
+{
+  "filing": {
+    "company": {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "cik": "0000789019"
+    },
+    "accession_number": "0001193125-26-323660",
+    "filing_date": "2026-07-29",
+    "fiscal_year": 2026,
+    "period_end": "2026-06-30",
+    "primary_document": "msft-20260630.htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm",
+    "local_path": "data\\filings\\MSFT_0001193125-26-323660.htm"
+  },
+  "metrics": [
+    {
+      "ticker": "MSFT",
+      "metric": "cash_and_equivalents",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "20935000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "20,935",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Cash and cash equivalents | 20,935 | 30,242",
+        "matched_text": "20,935",
+        "location": "balance sheet, row 'Cash and cash equivalents'",
+        "table_index": 26,
+        "row_label": "Cash and cash equivalents",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "total_assets",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "758376000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "758,376",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total assets | 758,376 | 619,003",
+        "matched_text": "758,376",
+        "location": "balance sheet, row 'Total assets'",
+        "table_index": 26,
+        "row_label": "Total assets",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "revenue",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "331839000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "331,839",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total revenue | 331,839 | 281,724 | 245,122",
+        "matched_text": "331,839",
+        "location": "income statement, row 'Total revenue'",
+        "table_index": 24,
+        "row_label": "Total revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "total_liabilities",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "315989000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "315,989",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total liabilities | 315,989 | 275,524",
+        "matched_text": "315,989",
+        "location": "balance sheet, row 'Total liabilities'",
+        "table_index": 26,
+        "row_label": "Total liabilities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "shareholders_equity",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "442387000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "442,387",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Total stockholders\u2019 equity | 442,387 | 343,479",
+        "matched_text": "442,387",
+        "location": "balance sheet, row 'Total stockholders\u2019 equity'",
+        "table_index": 26,
+        "row_label": "Total stockholders\u2019 equity",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "gross_profit",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "225465000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "225,465",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Gross margin | 225,465 | 193,893 | 171,008",
+        "matched_text": "225,465",
+        "location": "income statement, row 'Gross margin'",
+        "table_index": 24,
+        "row_label": "Gross margin",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "operating_income",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "155237000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "155,237",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Operating income | 155,237 | 128,528 | 109,433",
+        "matched_text": "155,237",
+        "location": "income statement, row 'Operating income'",
+        "table_index": 24,
+        "row_label": "Operating income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "net_income",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "133749000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "133,749",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Net income | 133,749 | 101,832 | 88,136",
+        "matched_text": "133,749",
+        "location": "income statement, row 'Net income'",
+        "table_index": 24,
+        "row_label": "Net income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "diluted_eps",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "17.95",
+      "unit": "USD/share",
+      "scale": 1,
+      "raw_text": "17.95",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Diluted | 17.95 | 13.64 | 11.80",
+        "matched_text": "17.95",
+        "location": "income statement, row 'Diluted'",
+        "table_index": 24,
+        "row_label": "Diluted",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "operating_cash_flow",
+      "fiscal_year": 2026,
+      "period_end": "2026-06-30",
+      "period_start": null,
+      "value": "182935000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "182,935",
+      "extractor": "table",
+      "confidence": 1.0,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 1.0
+      },
+      "evidence": {
+        "snippet": "Net cash from operations | 182,935 | 136,162 | 118,548",
+        "matched_text": "182,935",
+        "location": "cash flow, row 'Net cash from operations'",
+        "table_index": 27,
+        "row_label": "Net cash from operations",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    }
+  ],
+  "prior_metrics": [
+    {
+      "ticker": "MSFT",
+      "metric": "cash_and_equivalents",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "30242000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "30,242",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Cash and cash equivalents | 20,935 | 30,242",
+        "matched_text": "30,242",
+        "location": "balance sheet, row 'Cash and cash equivalents'",
+        "table_index": 26,
+        "row_label": "Cash and cash equivalents",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "total_assets",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "619003000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "619,003",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total assets | 758,376 | 619,003",
+        "matched_text": "619,003",
+        "location": "balance sheet, row 'Total assets'",
+        "table_index": 26,
+        "row_label": "Total assets",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "revenue",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "281724000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "281,724",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total revenue | 331,839 | 281,724 | 245,122",
+        "matched_text": "281,724",
+        "location": "income statement, row 'Total revenue'",
+        "table_index": 24,
+        "row_label": "Total revenue",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "total_liabilities",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "275524000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "275,524",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total liabilities | 315,989 | 275,524",
+        "matched_text": "275,524",
+        "location": "balance sheet, row 'Total liabilities'",
+        "table_index": 26,
+        "row_label": "Total liabilities",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "shareholders_equity",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "343479000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "343,479",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Total stockholders\u2019 equity | 442,387 | 343,479",
+        "matched_text": "343,479",
+        "location": "balance sheet, row 'Total stockholders\u2019 equity'",
+        "table_index": 26,
+        "row_label": "Total stockholders\u2019 equity",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "gross_profit",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "193893000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "193,893",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Gross margin | 225,465 | 193,893 | 171,008",
+        "matched_text": "193,893",
+        "location": "income statement, row 'Gross margin'",
+        "table_index": 24,
+        "row_label": "Gross margin",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "operating_income",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "128528000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "128,528",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Operating income | 155,237 | 128,528 | 109,433",
+        "matched_text": "128,528",
+        "location": "income statement, row 'Operating income'",
+        "table_index": 24,
+        "row_label": "Operating income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "net_income",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "101832000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "101,832",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Net income | 133,749 | 101,832 | 88,136",
+        "matched_text": "101,832",
+        "location": "income statement, row 'Net income'",
+        "table_index": 24,
+        "row_label": "Net income",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "diluted_eps",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "13.64",
+      "unit": "USD/share",
+      "scale": 1,
+      "raw_text": "13.64",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Diluted | 17.95 | 13.64 | 11.80",
+        "matched_text": "13.64",
+        "location": "income statement, row 'Diluted'",
+        "table_index": 24,
+        "row_label": "Diluted",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    },
+    {
+      "ticker": "MSFT",
+      "metric": "operating_cash_flow",
+      "fiscal_year": 2025,
+      "period_end": "2025-06-30",
+      "period_start": null,
+      "value": "136162000000",
+      "unit": "USD",
+      "scale": 1000000,
+      "raw_text": "136,162",
+      "extractor": "table",
+      "confidence": 0.95,
+      "confidence_signals": {
+        "label_match": 1.0,
+        "table_type": 1.0,
+        "unit_clarity": 1.0,
+        "period_clarity": 1.0,
+        "numeric_wellformed": 1.0,
+        "extractor_agreement": 0.5
+      },
+      "evidence": {
+        "snippet": "Net cash from operations | 182,935 | 136,162 | 118,548",
+        "matched_text": "136,162",
+        "location": "cash flow, row 'Net cash from operations'",
+        "table_index": 27,
+        "row_label": "Net cash from operations",
+        "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm"
+      },
+      "status": "extracted",
+      "reviewed_value": null
+    }
+  ],
+  "segments": [],
+  "warnings": []
+}

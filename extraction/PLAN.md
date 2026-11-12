@@ -8,6 +8,14 @@ change; every signature already exists in `shared/interfaces.py`.
 > Mission in one line: make the numbers **correct** and the confidence **honest**.
 > Extraction reads the 10-K HTML. XBRL is P3's answer key and is never imported here.
 
+## Status 2026-11-12
+
+Steps 0-8 of §8 are built: EDGAR fetch + cache, table locate, parser, confidence, segments, LLM client,
+`explain_anomaly`, second reader. 47 tests pass offline. Real runs verified on **AAPL** (10 metrics) and
+**MSFT** (10 metrics), both with zero warnings and the accounting equation intact.
+TSLA / NVDA / AMZN await a real `SEC_USER_AGENT` in `.env` (`python -m extraction --all`).
+MCP server (step 10) is not built.
+
 ---
 
 ## 1. What the rest of the team expects from me
@@ -24,7 +32,10 @@ Hard rules I must not break:
 
 1. Cache-first, then network. `SEC_USER_AGENT` on every request. Max 8 req/s, same-filing twice = zero
    network calls.
-2. No LLM in fetch or extract. The only model call in the whole system is `explain_anomaly`.
+2. No LLM in `fetch_filing`. In `extract_filing` the table parser is **primary and independent**; the
+   LLM second reader (§4.3) is optional, is never the only source of a number without dropping that
+   number below green, and never decides a tier. See §11 — the hybrid needs a one-line team sign-off
+   because `VISION.md` currently says the LLM does not extract core metrics.
 3. `extraction/` must not import `verification/`, `validation/`, `workflow/` or `audit/`. Only
    `shared/`. (I may grep for this before every PR.)
 4. Money is `Decimal` in **full units**: the printed scale ("in millions") is applied once, inside
@@ -51,6 +62,7 @@ llm/
   __init__.py
   client.py        # complete_text, complete_json  (Ollama / Groq / Gemini via base_url + key)
   explain.py       # explain_anomaly: prompt + deterministic fallback, never raises
+  second_reader.py # optional 2nd extractor: located table snippet -> {metric: raw_text}
 
 mcp_server/
   server.py        # stretch: expose fetch_filing (+ extract_filing) as MCP tools
@@ -112,7 +124,9 @@ FilingRef.local_path (HTML)
      metric -> preferred statement -> alias match (exact | regex | suffix)
         -> ExtractedMetric(current col)  +  ExtractedMetric(prior col) into prior_metrics
   |
-  second pass with pandas.read_html on the same table -> extractor_agreement signal
+  second pass -> extractor_agreement:
+     llm/second_reader.py (optional) : printed text per metric
+     else pandas.read_html          : same cells, tie-break only
   |
   segments.find_segment_table(html) -> SegmentTable | []
   |
@@ -184,12 +198,48 @@ FilingRef.local_path (HTML)
   derive from `total current liabilities + total non-current liabilities` when both rows exist.
   No derivation → metric missing, `warnings` entry, P2's `decide` escalates it.
 
-### 4.3 Second extractor (no LLM)
+### 4.3 Second extractor — parser vs LLM (this *is* the agreement signal)
 
-`pandas.read_html(html)` over the located table gives a second, independent read of the same cells.
-It is not a fallback extractor; it exists only to produce `extractor_agreement`:
-compare `(normalised label, Decimal value)` pairs; equal → 1.0, one cell apart → 0.6, different →
-0.3, pandas failed to read the table → 0.5 (neutral, not punished for a library quirk).
+Two independent readers of the same cells. The parser is primary and always runs. The LLM reader is
+optional and only ever **second** — it is handed the located table, never the filing.
+
+| Reader | Input | Output | Role |
+|---|---|---|---|
+| parser | located table node | value + `raw_text` + evidence | primary, offline, deterministic |
+| LLM (`llm/second_reader.py`) | **only** that table's snippet (~60 rows) + the metric schema | `{"metric": "printed cell text"}` JSON | second opinion |
+| pandas | same table node | same cells | tie-break when no model is reachable |
+
+One call per statement set, `temperature=0`, `max_tokens≈400`, no retrieval, no tools. Any key outside
+`Metric` is dropped, so the model cannot invent a metric. It returns **printed text**, not a scaled
+number: scaling stays in my code, one place.
+
+Agreement scoring (`extractor_agreement`):
+
+| Case | signal | value used | `extractor` | outcome |
+|---|---|---|---|---|
+| both found, same value | 1.0 | parser | `BOTH` | can go Green |
+| both found, differ | 0.3 | parser | `TABLE` | confidence capped 0.70 → Yellow/Red |
+| parser only | 0.6 | parser | `TABLE` | can go Green at a small discount |
+| **LLM only** | 0.4 | **LLM value** | `LLM` | confidence capped 0.70 → Yellow, human confirms |
+| neither | — | — | — | metric missing, `warnings` + escalate |
+| LLM unreachable | pandas path (table below) | parser | `TABLE` | identical scoring, no network needed |
+
+Pandas tie-break, used only when the LLM cannot answer: same cell 1.0, one cell apart 0.6, different
+0.3, pandas failed to read the table 0.5 (neutral — a library quirk is not the extractor's fault).
+
+The two worked examples that justify the design:
+
+- **Apple, `Total assets`.** Parser finds the row and reads `364,980`. The LLM reads the same snippet
+  and returns `364,980`. Agreement 1.0, accounting check passes downstream → Green, no human.
+- **A company whose row is `Total Assets, net`.** The alias table misses it, so the parser returns
+  nothing. The LLM returns `120,500`. Agreement 0.4 → value carried with `extractor=LLM`, confidence
+  capped at 0.70 → Yellow with the snippet beside it. A human approves in one click. That is the
+  honest trade: the model buys label coverage, and the cap buys safety.
+
+Why not LLM-only: then nothing independent checks the number and confidence degrades into the model's
+opinion of itself. Why not parser-only: then every label variation becomes a missing value. This is
+also why the parser ships first and the reader is additive (§8).
+
 
 ### 4.4 `segments.py`
 
@@ -211,21 +261,49 @@ Deterministic. Reads only fields that extraction already wrote. No network, no X
 | `table_type` | stray note table 0.2 | a located financial statement 1.0 | locate score |
 | `unit_clarity` | no scale anywhere 0.3 | explicit "in millions" header 1.0 | locate scale |
 | `period_clarity` | column header unparsed 0.4 | column maps to the current period_end 1.0 | header parse |
-| `numeric_wellformed` | range/footnote/merged 0.4 | one clean number 1.0 | cell normaliser |
-| `extractor_agreement` | primary and pandas disagree 0.3 | both read the same value 1.0 | §4.3 |
+| `numeric_wellformed` | range/footnote/merged 0.4 | one clean number, printed text found verbatim in the snippet, 1.0 | cell normaliser + snippet check |
+| `extractor_agreement` | parser and LLM disagree 0.3 | both read the same value 1.0 | §4.3 |
+
+`snippet_verbatim` (your "value appears in the source snippet") is folded into
+`numeric_wellformed`, not added as a seventh signal: `raw_text` must be a literal substring of
+`evidence.snippet` after whitespace collapse → 1.0, matches only after normalisation (commas,
+parentheses) → 0.6, absent → 0.2. Folding keeps the six signal names that the team already agreed on
+and spares a contract change.
 
 Weights (fixed, sum 1.0): `label_match .25`, `numeric_wellformed .20`, `unit_clarity .15`,
 `period_clarity .15`, `table_type .15`, `extractor_agreement .10`.
 
 ```
 confidence = round(sum(w_i * s_i), 4)
-if extractor == DERIVED:  confidence = min(confidence, 0.80)
+if extractor == DERIVED:          confidence = min(confidence, 0.80)
+if extractor_agreement < 0.5:     confidence = min(confidence, 0.70)   # readers disagree -> human
 ```
+
+### 5.1 What is deliberately NOT in the confidence score
+
+You asked for four features: parser/LLM agreement, validation checks passed, snippet containment,
+change versus prior year. Two of them land here; two must not.
+
+| Feature | Where it belongs | Why not in confidence |
+|---|---|---|
+| parser/LLM agreement | here — `extractor_agreement` | it is a parse-quality fact |
+| value appears in snippet | here — folded into `numeric_wellformed` | same |
+| validation checks passed | **P2 `decide`** → the tier is Green only if confidence ≥ threshold *and* every check passed | `SCORE` runs before `VALIDATE` (Step order); `score_extraction` cannot see a `ValidationResult` by contract, and feeding one back in would let a wrong number argue itself green |
+| change vs prior year | **P2 `yoy_change` check** (already spec'd, 40% default) | it is arithmetic plausibility, not parse quality; duplicating it double-penalises the same value and blurs the calibration chart |
+
+Net effect on the demo story is unchanged: high agreement **and** clean checks → Green. The split
+exists so the calibration chart (P3) can still say *"high confidence really is more accurate"* without
+the confidence number having read the answer key or a check result.
+
+
+### 5.2 Worked examples and idempotency
 
 Every signal is stored in `metric.confidence_signals`, so the calibration chart (P3) can show *why*
 a bucket is inaccurate. Clean Apple row: `1.0*.25 + 1.0*.20 + 1.0*.15 + 1.0*.15 + 1.0*.15 + 1.0*.10
 = 1.00`. Missing scale header + suffix label guess: `0.25*0.7 + 0.20 + 0.15*0.3 + 0.15 + 0.15 + 0.10
-= 0.775` → Yellow. That is the intended shape: boring rows are green, suspicious rows are not.
+= 0.775` → Yellow. LLM-only read of `Total Assets, net`: `0.25*0.7 + 0.20*1.0 + 0.15 + 0.15 + 0.15 +
+0.10*0.4 = 0.915`, then the disagreement cap clamps it to **0.70** → Yellow. That is the intended
+shape: boring rows are green, suspicious rows are not.
 
 `score_extraction` returns a copy with `confidence` and `confidence_signals` filled
 (`model_copy(update=...)` on each metric), and is idempotent — scoring twice gives the same numbers,
@@ -233,7 +311,7 @@ which the test asserts.
 
 ---
 
-## 6. Workflow D — LLM layer (one function, one client)
+## 6. Workflow D — LLM layer (two call sites, one client)
 
 `llm/client.py`
 
@@ -270,6 +348,23 @@ duplicate call inside one run; cross-process caching stays P2's job (`decide` ca
 
 Never: explain to *change* a number, explain to *decide* a tier, or retry a failed check.
 
+`llm/second_reader.py` — the optional second extractor of §4.3
+
+```
+read_metrics(snippet: str, metrics: list[Metric], model=None) -> dict[Metric, str]
+  system = "You read financial statement rows. Copy cell text exactly. Never compute."
+  user   = snippet (max ~6000 chars) + the expected metric list
+  -> complete_json(..., model=settings.llm_model_extract, max_tokens=400)
+  -> keep only keys in `Metric`, only values that normalise to a number, drop everything else
+  -> any exception -> {}                      # parser continues alone, agreement falls back to pandas
+```
+
+Rules for this module: one call per filing (all metrics in one prompt), no retry, no second attempt on
+a bad key, 15s own timeout so a hung model cannot stall the graph, and it returns **printed text** so
+all scaling stays in `table_parser`. It is called from `extract_filing` behind a module constant
+`LLM_SECOND_READER = True` — flip it to make extraction fully offline without touching config.
+
+
 ---
 
 ## 7. Tests (all in my folders)
@@ -279,9 +374,10 @@ Never: explain to *change* a number, explain to *decide* a tier, or retry a fail
 | `tests/extraction/test_label_match.py` | exact / regex / suffix tiers map to 1.0 / .85 / .7; AMZN-style labels hit |
 | `tests/extraction/test_table_parser.py` | tiny inline HTML: `(1,234)` → `-1234`, `—` → 0, footnote stripped, scale applied, raw_text preserved, prior column captured |
 | `tests/extraction/test_locate.py` | picks balance sheet over a note table; reads "in millions"; dates the columns |
-| `tests/extraction/test_confidence.py` | same input twice → identical score; DERIVED ≤ 0.80; missing scale lowers the score; clean row = 1.0 |
+| `tests/extraction/test_confidence.py` | same input twice → identical score; DERIVED ≤ 0.80; disagreement ≤ 0.70; missing scale lowers the score; clean row = 1.0 |
 | `tests/extraction/test_edgar.py` | cache hit makes zero HTTP calls (monkeypatched transport); `fiscal_year` rule; 403 raises the UA message |
 | `tests/extraction/test_derived.py` | AMZN-style input without `total liabilities` → DERIVED value, capped confidence |
+| `tests/extraction/test_second_reader.py` | fake client returning `{"total_assets": "120,500"}` → metric added with `extractor=LLM`, confidence ≤ 0.70; client raising → unchanged result; unknown key / non-numeric value dropped |
 | `tests/extraction/test_segments.py` | segment rows sum to reported total; no table → `[]` |
 | `tests/extraction/test_fixture.py` | `tests/fixtures/aapl_extraction.json` validates as `ExtractionResult`, 8+ metrics, prior year present |
 | `tests/llm/test_explain.py` | client raising → fallback string, non-empty, no exception; success path returns one sentence |
@@ -306,9 +402,14 @@ so P2/P3 can `model_validate_json` it directly). One fixture per company by the 
 | 3 | `feat/p1-confidence` | `confidence.py` | six signals on every metric, deterministic test green |
 | 4 | `feat/p1-fixture` | `tests/fixtures/aapl_extraction.json` | fixture validates, 8+ metrics, P2/P3 unblocked |
 | 5 | `feat/p1-segments` | `segments.py` | segment sum check has data for at least 2 companies |
-| 6 | `feat/p1-llm` | `llm/client.py`, `llm/explain.py` | fallback proven with no Ollama running |
-| 7 | `feat/p1-scale` | alias tuning for MSFT/TSLA/NVDA/AMZN | 8+ metrics × 5 companies, one fixture each, AMZN derived field capped at 0.80 |
-| 8 | `feat/p1-mcp` (stretch) | `mcp_server/server.py` | tools list and call `fetch_filing` from an MCP client |
+| 6 | `feat/p1-parser-3` | alias tuning for MSFT + TSLA | **parser only**, 8+ metrics on 3 companies, one fixture each — no model involved |
+| 7 | `feat/p1-llm` | `llm/client.py`, `llm/explain.py` | fallback proven with no Ollama running |
+| 8 | `feat/p1-second-reader` | `llm/second_reader.py` + agreement wiring | LLM fills a metric the parser missed (`extractor=LLM`, ≤ 0.70); with the model stopped, output is byte-identical to step 6 |
+| 9 | `feat/p1-scale` | NVDA + AMZN aliases, AMZN derived field | 8+ metrics × 5 companies, one fixture each, derived capped at 0.80 |
+| 10 | `feat/p1-mcp` (stretch) | `mcp_server/server.py` | tools list and call `fetch_filing` from an MCP client |
+
+Cut order if time runs out: MCP → second reader → explain polishing. **Never cut the parser**, and never
+let a step-8 failure block a demo: with the reader off, everything still runs on cached files.
 
 Each step: `uv run pytest tests/extraction tests/llm`, `uv run ruff check .`, then PR into `dev`.
 
@@ -326,16 +427,44 @@ Each step: `uv run pytest tests/extraction tests/llm`, `uv run ruff check .`, th
   January, so the current column's `period_end` is next calendar year.
 - **Two candidate tables** (statement + note) → highest locate score wins, the other lands in
   `warnings` so P2 can escalate rather than guess.
+- **Agreement is not proof.** Both readers can pick the same wrong column and agree at 1.0. That is
+  exactly why P2 still runs the accounting equation and the YoY check, and why a Green value that
+  fails arithmetic turns Red anyway (VISION: arithmetic outranks confidence).
+- **The second reader costs latency and an API key.** One call per filing, 15s cap, silent fallback.
+  If Ollama is not running during the demo, extraction must produce identical output from cache —
+  that is a test, not a hope.
 - Root `edgar.py` + `cache/` are scratch artefacts from the kickoff exploration, owned by nobody.
   Ask the team to delete them so two EDGAR clients cannot drift apart.
 
 ## 10. Handoffs
 
-- **To P2**: `prior_metrics` is for YoY only; `segments` may be empty; DERIVED values cap at 0.80;
-  `warnings` is a plain string list safe to display.
+- **To P2**: `prior_metrics` is for YoY only; `segments` may be empty; DERIVED values cap at 0.80 and
+  `extractor_agreement < 0.5` caps at 0.70, so a parser/LLM disagreement reaches you as a low
+  confidence value — no new field, no schema change, your `decide` reads it as-is. `warnings` is a
+  plain string list safe to display.
 - **To P3**: every metric has `evidence.matched_text` that is a literal substring of
-  `evidence.snippet` (click-to-highlight contract); confidence signals keyed by the six fixed names;
-  fixtures are `ExtractionResult` JSON.
+  `evidence.snippet` (click-to-highlight contract) — this holds for LLM-read values too, because the
+  reader returns printed text that I re-locate in the snippet before accepting it; confidence signals
+  keyed by the six fixed names; `extractor` may be `table`, `llm`, `both` or `derived`; fixtures are
+  `ExtractionResult` JSON.
 - **Open question for P3**: the brief mentions an "XBRL lookup MCP tool" on my side, but hard rule 1
   says only `verification/` may call Company Facts. Default: I ship `fetch_filing` + `extract_filing`
   tools only, and P3 can expose XBRL if they want it in the demo.
+
+## 11. Contract deltas before step 8 (file, don't assume)
+
+The hybrid is already legal at schema level: `shared/schemas.py` ships `Extractor.LLM` and
+`Extractor.BOTH` ("both ran and agreed"), and `confidence_signals` is an open dict. Nothing needs to
+change in `shared/` for this design.
+
+Two prose lines disagree with it, both frozen and owned by all three:
+
+1. `AGENTS.md` hard rule 3: *"the LLM does not … extract the 8 core metrics"*.
+2. `VISION.md` §"Where the LLM sits": *"One function calls a model: `llm.explain.explain_anomaly`."*
+
+File `docs/requests/p1-to-all-llm-second-extractor.md` before step 8 and get a yes in the PR. Proposed
+wording: *"The parser stays primary; the LLM is an optional second reader whose only output is an
+agreement signal. A value that only the LLM found always carries confidence ≤ 0.70 and therefore
+cannot auto-approve. `explain_anomaly` remains the only always-on call."* If the team says no, step 8
+is dropped and `extractor_agreement` keeps the pandas tie-break — the parser path is unchanged either
+way, which is the point of building it first.
