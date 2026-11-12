@@ -53,8 +53,9 @@ Until teammates finish: P2 sets `USE_FAKES=true` (uses `workflow/fakes.py`); P3 
 
 1. **XBRL is verification only.** Extraction reads the 10-K HTML. Only `verification/` may call Company Facts.
 2. **SEC etiquette.** `SEC_USER_AGENT` on every request, max 8 req/s, cache everything in `data/`, cache-first.
-3. **Deterministic first.** Parsing, confidence, validation, decisions are plain Python. The LLM is a fallback
-   extractor and an explainer. All LLM calls go through `llm/client.py`.
+3. **Deterministic first.** Parsing, confidence, validation, decisions are plain Python. The LLM does **not**
+   retrieve filings and does **not** extract the 8 core metrics; its one job is `explain_anomaly`. All LLM calls go
+   through `llm/client.py`.
 4. **Resume safety.** A LangGraph node that calls `interrupt()` re-runs from its first line on resume. So the
    interrupt lives in its own node, with no side effects before it. Every side effect uses the idempotency key
    `(run_id, step, item_id)` and is skipped if already done.
@@ -62,7 +63,10 @@ Until teammates finish: P2 sets `USE_FAKES=true` (uses `workflow/fakes.py`); P3 
    `AuditEntry.compute_hash()` defines. Provide a verifier.
 6. **Never silently fix a number.** A changed value exists only as a recorded human decision.
 7. **Money is `Decimal` in full units.** Apply "in millions/thousands" scale during extraction.
-8. **Confidence uses extraction-time signals only.** Never ground truth.
+8. **Confidence is a parse-quality score, not model certainty.** `score_extraction` computes it from fixed
+   deterministic signals at extraction time (`label_match`, `table_type`, `unit_clarity`, `period_clarity`,
+   `numeric_wellformed`, `extractor_agreement`), stored in `confidence_signals`. Never ground truth, never a
+   validation result, never an LLM's own probability.
 9. **No secrets or data in git.** `.env`, `data/`, `*.db` are ignored.
 10. **Every module ships with a test** in its owner's `tests/` folder. Resume and hash-chain tests are mandatory.
 

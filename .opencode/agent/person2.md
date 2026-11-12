@@ -32,7 +32,7 @@ You are working with **Person 2: Workflow Engine and Trust Layer**. Read `AGENTS
 
 ## Your mission
 Make the system **reliable and accountable**. Workflow Reliability and Auditability are yours, and a single repeated side
-effect after resume loses points.
+effect after resume loses points. You also own tier integrity: no value may ever be Green while a check on it failed.
 
 ## Order of work
 1. `workflow/fakes.py` first, returning fixture-shaped data, so the graph runs on day one.
@@ -47,11 +47,17 @@ effect after resume loses points.
    returns `AuditVerification`. Test that a tampered row is detected.
 7. `validation/checks.py`: accounting equation, segment sum, year-on-year, each with plain-English `detail`.
    Return passed and failed results. `validation/engine.py` runs them.
-8. `validation/decide.py`: confidence below threshold or failed check means escalate, with reasons the reviewer understands.
+8. `validation/decide.py`: assign the tier from **both** axes — Green needs `confidence >= thresholds.confidence`
+   **and** every check passed; any `error`-severity failure or missing value is Red regardless of confidence; the
+   rest are Yellow. Call `load_provider("explain_anomaly")(validation, metric)` for each failed check, cache the
+   sentence by `(metric_id, check)` so a resume never calls the model twice, and fall back to the template string if
+   the LLM is unreachable.
 9. `workflow/service.py`: implement the Protocol; `estimate_escalations()` dry-run for the threshold sliders;
-   `workflow/fault.py` applies a `FaultSpec` right after extraction.
-10. Parallel runs with `asyncio.gather`. Stretch: `validation/adaptive.py` (reviewer feedback tunes
-    `per_metric_confidence`, still catching injected faults); call `explain_anomaly` for failed checks.
+   `workflow/fault.py` applies a `FaultSpec` right after extraction. `submit_decision()` refuses an APPROVE on a Red
+   item unless `note` is set — the guard lives here, not in the UI.
+10. Parallel runs with `asyncio.gather`. Stretch: `validation/adaptive.py` — reviewer behaviour produces a
+    *suggestion* for `per_metric_confidence`; a human applies it, and the change writes a `threshold_change` audit row.
+    Never mutate thresholds silently.
 
 ## Definition of done
 A paused run survives a process restart; resuming never repeats a fetch, extraction or audit entry; the chain verifies

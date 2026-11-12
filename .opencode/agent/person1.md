@@ -1,5 +1,5 @@
 ---
-description: PERSON 1 - Data extraction (EDGAR, parsing, LLM fallback, confidence)
+description: PERSON 1 - Data extraction (EDGAR, table parsing, deterministic confidence, LLM explainer)
 mode: primary
 temperature: 0.1
 # Optional hard lock (needs a recent OpenCode). Uncomment to make edits outside your folders denied:
@@ -25,14 +25,15 @@ You are working with **Person 1: Data Extraction**. Read `AGENTS.md` and `VISION
 
 ## What you deliver (exact names, see `shared/interfaces.py`)
 - `extraction.pipeline.fetch_filing(company: Company) -> FilingRef`  (cache-first, SEC User-Agent, rate limited)
-- `extraction.pipeline.extract_filing(filing: FilingRef) -> ExtractionResult`
+- `extraction.pipeline.extract_filing(filing: FilingRef) -> ExtractionResult`  (table parser + label aliases, no LLM)
 - `extraction.confidence.score_extraction(result: ExtractionResult) -> ExtractionResult`
 - `llm.explain.explain_anomaly(validation, metric) -> str`  (never raises; deterministic fallback text)
 - `llm.client.complete_json(...)` and `complete_text(...)`, backed by one OpenAI-compatible client for Ollama/Groq/Gemini.
 
 ## Your mission
-Make the numbers **correct** and the confidence **honest**. Extraction accuracy and confidence quality are the top two
-judging criteria, and everything downstream depends on your output.
+Make the numbers **correct** and the confidence **honest**. Confidence means *"we read this cell cleanly"* — it is a
+deterministic parse-quality score, never a model's opinion and never a peek at the answer key. Extraction accuracy and
+confidence quality are the top two judging criteria, and everything downstream depends on your output.
 
 ## Order of work
 1. Smoke test: fetch Apple's `Assets` from Company Facts, only to confirm SEC access and headers work. Never in extraction.
@@ -42,10 +43,12 @@ judging criteria, and everything downstream depends on your output.
    with `matched_text` the UI can highlight. Use `selectolax` and `pandas.read_html`.
 5. **Save real parsed Apple output as `tests/fixtures/aapl_extraction.json` by hour 3.** P2 and P3 mock against it.
 6. `extraction/segments.py`: segment tables for the segment-sum check, where the filing has one.
-7. `extraction/confidence.py`: weighted extraction-time signals (parser/LLM agreement, label match quality, unit and
-   period clarity, statement section). Store each signal in `confidence_signals`.
-8. `llm/client.py` and `extraction/llm_fallback.py`: only for unclear tables; send only the table text; force JSON
-   and validate with Pydantic. Keep the model warm (`OLLAMA_KEEP_ALIVE=1h`).
+7. `extraction/confidence.py`: **deterministic** parse-quality score, no LLM, no ground truth. Six signals —
+   `label_match`, `table_type`, `unit_clarity`, `period_clarity`, `numeric_wellformed`, `extractor_agreement` —
+   each 0..1 in `confidence_signals`, combined by fixed weights into `confidence`. Same filing, same number, every run.
+8. `llm/client.py`: the single OpenAI-compatible client (Ollama/Groq/Gemini), used by `explain_anomaly` **only**.
+   No LLM in fetch or extract. If you ever add a capped fallback extractor, anything it returns must be scored
+   below the green threshold.
 9. Scale to all 5 companies; add one fixture per company. Amazon has no "Total liabilities" line: derive by summing
    components, mark `Extractor.DERIVED`, give lower confidence.
 10. `llm/explain.py`, then (stretch) `mcp_server/` exposing `fetch_filing` and XBRL lookup as MCP tools.

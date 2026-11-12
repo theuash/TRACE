@@ -44,6 +44,32 @@ Three rules keep the colour honest:
    it writes a `threshold_change` audit entry.
 3. **Red is not a colour you can click past.** An approval of a Red value is refused at the service boundary
    unless it carries a note — the UI alone is not a guarantee.
+## What confidence means
+
+Confidence is **not** how sure a model is. There is no model in the scoring path. `score_extraction`
+computes one number between 0 and 1 from deterministic signals that exist at extraction time, and stores
+each of them in `confidence_signals`. The same filing always produces the same score.
+
+| Signal | Reads high | Reads low |
+|---|---|---|
+| `label_match` | exact alias hit, e.g. "Total shareholders' equity" | regex suffix guess |
+| `table_type` | row sits in a financial statement table | stray note table |
+| `unit_clarity` | header says "In millions" | no scale header |
+| `period_clarity` | column header is the current fiscal year | ambiguous columns |
+| `numeric_wellformed` | one clean number in the cell | range, footnote marker, merged cell |
+| `extractor_agreement` | a second extractor agrees | they disagree |
+
+Confidence answers *"did we read this cell cleanly?"* Validation answers *"is the number arithmetically
+sane?"* A value is Green only when both agree. Confidence never reads XBRL, never reads a validation
+result, and is never asked of a model — otherwise the calibration chart proves nothing.
+
+## Where the LLM sits
+
+Retrieval (EDGAR to file) and extraction (file to metrics) are plain Python: httpx plus a table parser.
+**One** function calls a model: `llm.explain.explain_anomaly`. It writes the single plain-English
+sentence on a failed check and returns a deterministic fallback string when no model is reachable. It runs
+inside `decide`, before the pause, and its output is cached so a resume never calls it twice.
+
 ## The main thing
 
 If we only get one thing right, it is this:

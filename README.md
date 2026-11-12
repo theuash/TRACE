@@ -20,7 +20,13 @@ fetch_filing -> extract -> score -> validate -> decide
                                       verify vs XBRL -> accuracy report
 ```
 
-- **Extraction** reads the filing's HTML tables. An LLM is used only as a fallback.
+- **Extraction** reads the filing's HTML tables with a deterministic parser and a label alias map. No LLM.
+- **Confidence** is a parse-quality score from six fixed signals (`label_match`, `unit_clarity`, `period_clarity`,
+  `numeric_wellformed`, `table_type`, `extractor_agreement`) — not a model's opinion, never XBRL.
+- **Traffic light**: Green = high confidence *and* every check passed (auto-approved); Yellow = medium confidence or
+  a warning; Red = failed accounting rule, missing value, or very low confidence (the report is blocked until resolved).
+- **The only LLM call** is `explain_anomaly`, writing the plain-English reason on a failed check, with a deterministic
+  fallback when no model is reachable.
 - **Ground truth** (SEC XBRL Company Facts) is used only for final verification, never for extraction.
 - **Pause/resume** uses LangGraph `interrupt` + a SQLite checkpointer. Resumed runs repeat no side effects.
 - **Audit log** is append-only and SHA-256 hash-chained.

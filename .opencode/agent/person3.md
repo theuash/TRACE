@@ -41,8 +41,10 @@ Experience and the demo are yours.
    the Protocol (runs, metrics, validations, reviews, decision, thresholds, audit, audit/verify, report, estimate).
 2. `ui/app.py` scaffold with pages Overview, Review Queue, Metrics, Audit Log, Scoreboard. `ui/api_client.py` only; never import
    workflow code.
-3. Review Queue: value, confidence bar, plain-English reasons, source snippet with `matched_text` **highlighted**, Approve /
-   Edit / Reject form, pending vs completed tabs, auto-refresh.
+3. Review Queue: value, tier badge (the colour **comes from the API**, never recomputed in the UI), confidence bar with
+   its `confidence_signals` breakdown on hover, plain-English reasons, source snippet with `matched_text` **highlighted**,
+   Approve / Edit / Reject form, pending vs completed tabs, auto-refresh. Red items pinned to the top; Approve disabled
+   until the reviewer enters a correction or a note.
 4. Metrics page: companies x metrics, colour-coded status, validation pass/fail panel, per-run `side_effect_counts`
    ("nothing repeated" proof).
 5. Audit Log page with a **Verify log integrity** button (green or red).
@@ -52,8 +54,9 @@ Experience and the demo are yours.
    using `ACCURACY_TOLERANCE_PCT`. `verification/report.py`: totals, escalation precision, per-metric and per-company
    accuracy, **calibration buckets**.
 8. Scoreboard page: auto-approved vs escalated, accuracy, escalation precision, calibration chart (Plotly).
-9. Threshold sliders using `estimate_escalations` for the before and after story; a **Corrupt a value** button that sends a
-   `FaultSpec` in `RunRequest`.
+9. Two threshold sliders — green (default 0.85) and critical (default 0.60) — using `estimate_escalations` for the
+   before/after story; every applied change goes through `set_thresholds` so it lands in the audit log. A **Corrupt a
+   value** button that sends a `FaultSpec` in `RunRequest`.
 10. `demo/prefetch.py` to pre-warm all 5 companies, `docs/architecture.md`, `docs/demo_script.md`, backup recording plan,
     keep `README.md` accurate.
 

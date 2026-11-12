@@ -54,7 +54,11 @@ class ExtractFiling(Protocol):
 
 class ScoreExtraction(Protocol):
     """Person 1. Fill `confidence` and `confidence_signals` on every metric from extraction-time
-    signals only (extractor agreement, label match quality, unit/period clarity)."""
+    signals only (extractor agreement, label match quality, unit/period clarity).
+
+    `confidence` is a DETERMINISTIC parse-quality score, not a model's certainty: same filing, same
+    number. It is never derived from XBRL, from a validation result, or from an LLM's own probability.
+    """
 
     def __call__(self, result: ExtractionResult) -> ExtractionResult: ...
 
