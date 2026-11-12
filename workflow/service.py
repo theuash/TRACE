@@ -121,6 +121,7 @@ class WorkflowService:
             run_id=run_id,
             ticker=row[1] if row else self._ticker(run_id),
             status=RunStatus(row[2]) if row else RunStatus.PENDING,
+            error=row[3] if row else None,
             current_step=Step(snapshot.next[0]) if snapshot.next else None,
             steps_completed=[Step(s) for s in values.get("steps_completed", [])],
             side_effect_counts=self._store.counts(run_id),
@@ -234,7 +235,13 @@ class WorkflowService:
             raise ValueError(
                 "This value is Red: approve it only with a note explaining why, or correct it."
             )
-        self._graph.invoke(Command(resume=[decision.model_dump(mode="json")]), self._cfg(run_id))
+        try:
+            self._graph.invoke(
+                Command(resume=[decision.model_dump(mode="json")]), self._cfg(run_id)
+            )
+        except Exception as exc:  # noqa: BLE001 - a failed resume must be visible, not silent
+            self._set_status(run_id, RunStatus.FAILED, f"{type(exc).__name__}: {exc}")
+            raise
         paused = bool(self._graph.get_state(self._cfg(run_id)).next)
         self._set_status(run_id, RunStatus.PAUSED if paused else RunStatus.COMPLETED)
         return self._summary(run_id)

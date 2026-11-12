@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from extraction.locate import LocatedTable
-from extraction.table_parser import parse_rows, to_decimal
+from extraction.table_parser import normalise, parse_rows, to_decimal
 from llm.client import complete_json
 from shared.config import get_settings
 from shared.schemas import Metric
@@ -13,7 +13,7 @@ SYSTEM = (
     "Never compute, never scale, never guess. Reply with JSON only."
 )
 MAX_SNIPPET_CHARS = 6000
-READER_TIMEOUT_S = 5.0
+READER_TIMEOUT_S = 20.0  # a local 1.5B model needs longer than 5 s
 _unavailable = False  # first failure turns the reader off for the rest of the process
 
 
@@ -69,3 +69,43 @@ def read_metrics(
         if to_decimal(value)[0] is not None:
             found[metric] = value.strip()
     return found
+
+
+LABEL_SYSTEM = (
+    "You read rows from a US 10-K financial statement, one row per line as 'label | value'. "
+    "For each metric asked for, name the row label that reports it, copied exactly. Reply with "
+    "JSON only, mapping metric key to row label. Omit anything you cannot find. Never invent a "
+    "label, never return a number."
+)
+
+
+def read_labels(snippet: str, metrics: list[Metric], model: str | None = None) -> dict[Metric, str]:
+    """Which row reports each metric. The model names a row; the parser supplies the number.
+
+    An unknown label is rejected, so a hallucinated row cannot become a metric. {} on any failure.
+    """
+    global _unavailable
+    if _unavailable or not snippet.strip() or not metrics:
+        return {}
+    keys = ", ".join(f'"{metric.value}"' for metric in metrics)
+    try:
+        data = complete_json(
+            f"Metrics to find: {keys}\n\n{snippet}",
+            system=LABEL_SYSTEM,
+            model=model or get_settings().llm_model_extract,
+            max_tokens=400,
+            timeout=READER_TIMEOUT_S,
+        )
+    except Exception:
+        _unavailable = True
+        return {}
+    known = {normalise(line.split(" | ")[0]) for line in snippet.splitlines() if " | " in line}
+    out: dict[Metric, str] = {}
+    for key, value in data.items():
+        try:
+            metric = Metric(key)
+        except ValueError:
+            continue
+        if metric in metrics and isinstance(value, str) and normalise(value) in known:
+            out[metric] = value.strip()
+    return out

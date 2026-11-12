@@ -16,16 +16,20 @@ from __future__ import annotations
 
 from shared.interfaces import load_provider
 from shared.schemas import (
+    CORE_METRICS,
     AutoDecision,
     EscalationItem,
     EscalationKind,
     EscalationReason,
     ExtractedMetric,
     ExtractionResult,
+    Metric,
     RiskTier,
     Severity,
+    SourceEvidence,
     Thresholds,
     ValidationResult,
+    make_metric_id,
 )
 
 # (metric_id, check) -> sentence. Survives within a process; across a restart the sentence is
@@ -103,6 +107,33 @@ def _reasons(
     return reasons
 
 
+def _missing_item(result: ExtractionResult, metric: Metric) -> EscalationItem:
+    """A core metric that is absent from the filing. Always Red: absence beats any confidence."""
+    filing = result.filing
+    label = metric.value.replace("_", " ").capitalize()
+    return EscalationItem(
+        review_id=make_metric_id(filing.company.ticker, metric, filing.fiscal_year),
+        ticker=filing.company.ticker,
+        metric=metric,
+        fiscal_year=filing.fiscal_year,
+        value=None,  # no number exists; writing 0 would invent one
+        confidence=0.0,
+        tier=RiskTier.RED,
+        reasons=[
+            EscalationReason(
+                kind=EscalationKind.MISSING_VALUE,
+                message=f"{label} was not found in this filing.",
+            )
+        ],
+        evidence=SourceEvidence(
+            snippet="",
+            matched_text="",
+            location=f"not found in {filing.primary_document}",
+            source_url=filing.url,
+        ),
+    )
+
+
 def decide(
     result: ExtractionResult,
     validations: list[ValidationResult],
@@ -118,6 +149,7 @@ def decide(
 
     approved: list[str] = []
     escalations: list[EscalationItem] = []
+    present = {metric.metric for metric in result.metrics}
     for metric in result.metrics:
         failed = failed_by_metric.get(metric.id, [])
         tier = tier_for(metric, failed, thresholds)
@@ -139,5 +171,8 @@ def decide(
                 failed_checks=failed,
             )
         )
+    escalations.extend(
+        _missing_item(result, metric) for metric in CORE_METRICS if metric not in present
+    )
     escalations.sort(key=lambda item: (item.tier != RiskTier.RED, item.confidence))
     return AutoDecision(auto_approved_ids=approved, escalations=escalations)

@@ -321,7 +321,9 @@ class EscalationItem(Base):
     ticker: str
     metric: Metric
     fiscal_year: int
-    value: Decimal
+    # None when the metric is MISSING from the filing: there is no number to show. Never 0, because
+    # 0 is a real value and rule 6 forbids inventing one. The reviewer sees the absence, not a fake.
+    value: Decimal | None = None
     unit: Unit = Unit.USD
     confidence: float
     tier: RiskTier = RiskTier.YELLOW  # set by decide(); the UI only renders it
