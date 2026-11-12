@@ -43,7 +43,7 @@ cp .env.example .env        # set SEC_USER_AGENT="Your Name your@email.com"
 ollama pull qwen2.5:7b
 
 # 4. Run
-uv run uvicorn agent.api:app --reload --port 8000    # backend
+uv run uvicorn api.main:app --reload --port 8000     # backend
 uv run streamlit run ui/app.py                       # dashboard (new terminal)
 
 # 5. Test
@@ -52,17 +52,25 @@ uv run pytest
 
 ## Repo layout
 
-```
-agent/        LangGraph workflow, API, audit log          (Person 1)
-extraction/   EDGAR client, parsers, LLM fallback         (Person 2)
-validation/   Confidence, checks, decisions, XBRL verify  (Person 2)
-ui/           Streamlit reviewer dashboard                (Person 3)
-demo/         Fault injection, prefetch, demo helpers     (Person 3)
-shared/       Schemas, config, llm_client (team-owned)
-docs/         Architecture, demo script
-tests/        pytest suites
-data/         Cached filings and DBs (gitignored)
-```
+One owner per folder. Only the owning person edits a folder; contract files are frozen for everyone.
+
+| Folder | Contents | Owner |
+|---|---|---|
+| `extraction/` | EDGAR client, HTML parsers, `pipeline.py` (`fetch_filing`, `extract_filing`) | Person 1 |
+| `llm/` | `client.py` (the single LLM entry point), `explain.py` | Person 1 |
+| `mcp_server/` | MCP tool wrappers | Person 1 |
+| `workflow/` | LangGraph graph + `service.py`, checkpointer, `fakes.py` | Person 2 |
+| `audit/` | Append-only hash-chained log, verifier | Person 2 |
+| `validation/` | `engine.py` (checks), `decide.py`, confidence scoring | Person 2 |
+| `verification/` | XBRL ground truth, accuracy report, calibration | Person 3 |
+| `api/` | FastAPI app, schemas at the boundary, `mock_service.py` | Person 3 |
+| `ui/` | Streamlit reviewer dashboard | Person 3 |
+| `demo/` | Fault injection, prefetch, demo helpers, backup recording | Person 3 |
+| `docs/` | Architecture, demo script, `docs/requests/` hand-off notes | Person 3 |
+| `shared/` | `schemas.py`, `interfaces.py`, `config.py` (frozen contracts) | all |
+| `tests/` | Mirror of the owner folders (`tests/extraction/`, `tests/workflow/`, ...) | each owner |
+| `scripts/` | `check_ownership.py` and other team checks | all |
+| `data/` | Cached filings and DBs (gitignored) | none |
 
 ## Working with OpenCode
 
@@ -70,11 +78,14 @@ Three role agents are defined in `.opencode/agent/`. Start OpenCode in the repo,
 to switch between `person1`, `person2`, `person3` (or launch with `opencode --agent person2`).
 Each agent knows its folders, task list, and rules from `AGENTS.md`.
 
-| Agent | Role |
-|---|---|
-| `person1` | Workflow, resume, API, audit log |
-| `person2` | EDGAR, extraction, confidence, validation, XBRL accuracy |
-| `person3` | Dashboard, demo, fault injection, docs |
+| Agent | Role | Owns |
+|---|---|---|
+| `person1` | Data extraction | `extraction/`, `llm/`, `mcp_server/` |
+| `person2` | Workflow engine, trust layer | `workflow/`, `audit/`, `validation/` |
+| `person3` | Verification, API, reviewer experience | `verification/`, `api/`, `ui/`, `demo/`, `docs/` |
+
+Nobody imports a teammate's module directly. Every cross-folder call goes through
+`load_provider("<name>")` from `shared/interfaces.py`, so an unfinished module can be swapped for a fake.
 
 ## Git workflow
 

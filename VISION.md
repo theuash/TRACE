@@ -18,11 +18,32 @@ A LangGraph agent that, for real companies' 10-K filings:
 2. Extracts 8+ metrics from the **document itself**, keeping period, unit, and source snippet.
 3. Gives every value an honest **confidence score**.
 4. Validates with accounting rules (Assets = Liabilities + Equity, segment sums, year-on-year jumps).
-5. **Auto-approves** safe values and **pauses** on doubtful ones.
+5. **Routes** every value through a three-tier traffic light and **pauses** on the doubtful ones.
 6. Lets a human approve, correct, or reject in a dashboard, then **resumes from the saved checkpoint** with no repeated work.
 7. Grades itself against the SEC XBRL "answer key".
 8. Records every human decision in a **tamper-evident, append-only log**.
 
+## The traffic light
+
+Every current-year value gets one of three tiers. The tier is **computed once, deterministically, from the
+confidence score and the validation results** — never by the UI, never by the LLM. Judges should be able to
+read the rule and predict the colour.
+
+| Tier | Condition | Workflow | Reviewer sees |
+|---|---|---|---|
+| 🟢 **Green** | Confidence at or above the green threshold **and** every check passed | Auto-approved, no pause | Green *Verified* badge in the summary table; expandable evidence if they want to look |
+| 🟡 **Yellow** | Confidence in the amber band **or** only `warning`-severity checks failed | Pauses (`interrupt`) | Amber row, source snippet beside the value, one-click *Confirm* next to *Edit* / *Reject* |
+| 🔴 **Red** | Confidence below the critical threshold, **or** an `error`-severity check failed, **or** value missing / unit conflict | Pauses (`interrupt`), blocks the report until resolved | Pinned to the top, plain-English anomaly explanation, and *Approve* disabled until a correction or an explicit rejection with a note |
+
+Three rules keep the colour honest:
+
+1. **Arithmetic outranks confidence.** A value that fails the accounting equation is Red even at 0.99
+   confidence, and every metric named in the failed check goes with it. `decide()` already owes this.
+2. **Thresholds are suggestions to the human, never silent edits.** The system may propose tightening or
+   relaxing the green threshold from reviewer behaviour; the change happens only when a human applies it, and
+   it writes a `threshold_change` audit entry.
+3. **Red is not a colour you can click past.** An approval of a Red value is refused at the service boundary
+   unless it carries a note — the UI alone is not a guarantee.
 ## The main thing
 
 If we only get one thing right, it is this:
@@ -47,9 +68,11 @@ If we only get one thing right, it is this:
 
 ## Scope
 
-**In (mandatory):** EDGAR integration for 5 companies, 8+ metrics with period/unit/evidence, confidence scoring with configurable thresholds, three validation checks, pause/resume with checkpointing, reviewer dashboard, XBRL accuracy report, append-only audit log.
+**In (mandatory):** EDGAR integration for 5 companies, 8+ metrics with period/unit/evidence, confidence scoring with configurable thresholds, three-tier traffic-light routing, three validation checks, pause/resume with checkpointing, reviewer dashboard, XBRL accuracy report, append-only audit log.
 
-**In (wow layer, in priority order):** fault injection button, kill-and-resume demo, click-to-evidence highlighting, hash-chained log + verify button, scoreboard with calibration chart, adaptive thresholds, MCP tool wrappers.
+**In (wow layer, in priority order):** fault injection button, kill-and-resume demo, click-to-evidence
+highlighting, one-click confirm on Yellow plus the Red approval guard, hash-chained log + verify button,
+scoreboard with calibration chart, adaptive threshold *suggestions*, MCP tool wrappers.
 
 **Out:** PDF filings, non-US filers, Docker/Postgres/Redis, vector DB or RAG, user accounts, deployment to cloud.
 
@@ -58,6 +81,7 @@ If we only get one thing right, it is this:
 - Extraction accuracy vs XBRL (target: above 95% on the required metrics)
 - Auto-approved vs escalated counts
 - **Escalation precision**: share of escalations that were real errors or anomalies
+- **Tier integrity**: zero Green values that failed a check (this must be exactly 0, not "rarely")
 - Calibration: accuracy of high-confidence vs low-confidence buckets
 - Resume correctness: 0 duplicated side effects across a kill-and-restart
 - Audit integrity: chain verifies; tampering is detected
@@ -67,6 +91,7 @@ If we only get one thing right, it is this:
 - [ ] 5 companies run end to end
 - [ ] 8+ metrics per company with period, unit, evidence
 - [ ] At least one escalation is shown, reviewed, and resumed live
+- [ ] Every metric carries a Green / Yellow / Red tier, and a Red value cannot be approved without a note
 - [ ] Kill-and-resume test passes
 - [ ] Fault injection is caught and escalated
 - [ ] XBRL accuracy report and calibration chart generated
@@ -78,7 +103,8 @@ If we only get one thing right, it is this:
 
 1. **Hook (20s):** "One wrong number can mean a misstatement."
 2. **Happy path (60s):** 5 companies processed, most values auto-approved.
-3. **Catch (90s):** Corrupt a value; the accounting check fails, the agent pauses, the reviewer sees the evidence and reason, corrects it.
+3. **Catch (90s):** Corrupt a value; the accounting check fails, the row turns red, the agent pauses, the
+   reviewer sees the evidence and the reason, corrects it.
 4. **Proof of reliability (60s):** Kill the server while paused, restart, submit the decision, the run continues with no repeats.
 5. **Accountability (30s):** Audit log with the decision, then verify integrity.
 6. **Scoreboard (40s):** Accuracy, escalation precision, calibration chart.

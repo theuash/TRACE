@@ -1,1 +1,23 @@
-./example
+# Secrets (hard rule 9: no secrets in git)
+.env
+.env.*
+!.env.example
+
+# Cached filings, checkpoints, audit DBs
+data/
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.DS_Store
