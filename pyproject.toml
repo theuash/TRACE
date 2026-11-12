@@ -54,3 +54,4 @@ select = ["E", "F", "I", "UP", "B"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-q"
+markers = ["slow: spawns subprocesses (kill-and-resume)"]

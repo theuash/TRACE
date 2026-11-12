@@ -111,6 +111,14 @@ class Severity(StrEnum):
     ERROR = "error"
 
 
+class RiskTier(StrEnum):
+    """Traffic light. Computed by validation.decide from confidence AND validation results."""
+
+    GREEN = "green"  # auto-approved: confident and arithmetically clean
+    YELLOW = "yellow"  # pauses: medium confidence, or only warning-severity failures
+    RED = "red"  # pauses and blocks the report: hard failure or very low confidence
+
+
 class EscalationKind(StrEnum):
     LOW_CONFIDENCE = "low_confidence"
     VALIDATION_FAILED = "validation_failed"
@@ -267,11 +275,18 @@ class ExtractionResult(Base):
 
 
 class Thresholds(Base):
-    confidence: float = Field(default=0.85, ge=0.0, le=1.0)
+    confidence: float = Field(default=0.85, ge=0.0, le=1.0)  # green boundary
+    confidence_critical: float = Field(default=0.60, ge=0.0, le=1.0)  # red boundary
     yoy_change_pct: float = Field(default=40.0, gt=0)
     accounting_tolerance_pct: float = Field(default=0.1, ge=0)
     segment_tolerance_pct: float = Field(default=0.1, ge=0)
     per_metric_confidence: dict[Metric, float] = Field(default_factory=dict)  # adaptive overrides
+
+    @model_validator(mode="after")
+    def _critical_below_green(self) -> Thresholds:
+        if self.confidence_critical > self.confidence:
+            raise ValueError("confidence_critical must be <= confidence")
+        return self
 
     def confidence_for(self, metric: Metric) -> float:
         return self.per_metric_confidence.get(metric, self.confidence)
@@ -309,6 +324,7 @@ class EscalationItem(Base):
     value: Decimal
     unit: Unit = Unit.USD
     confidence: float
+    tier: RiskTier = RiskTier.YELLOW  # set by decide(); the UI only renders it
     reasons: list[EscalationReason]
     evidence: SourceEvidence
     failed_checks: list[ValidationResult] = Field(default_factory=list)
