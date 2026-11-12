@@ -9,7 +9,7 @@ from typing import Any
 import pandas as pd
 from lxml import html as lxml_html
 
-from extraction import edgar, locate, segments, table_parser
+from extraction import alias_memory, edgar, locate, segments, table_parser
 from extraction.confidence import score_extraction
 from extraction.locate import LocatedTable
 from extraction.table_parser import SCALE_EXEMPT, STATEMENT_FOR, normalise, to_decimal
@@ -174,11 +174,13 @@ def _apply_second_opinion(
     """Add the agreement signal, and any metric that only the model found, at low confidence."""
     snippet = second_reader.table_snippet(located) if LLM_SECOND_READER else ""
     wanted = [metric for metric in ALL_METRICS if metric not in _index(metrics)]
-    found = second_reader.read_metrics(snippet, list(ALL_METRICS)) if snippet else {}
+    labels = second_reader.read_labels(snippet, wanted) if snippet else {}
+    printed_for = {m: _printed_at(label, located) for m, label in labels.items()}
+    printed_for = {m: v for m, v in printed_for.items() if v is not None}
     frames: dict[int, Any] = {}
 
     for metric in metrics:
-        printed = found.get(metric.metric)
+        printed = printed_for.get(metric.metric)
         score = (
             _agreement(metric, printed, located)
             if printed is not None
@@ -186,12 +188,38 @@ def _apply_second_opinion(
         )
         metric.confidence_signals["extractor_agreement"] = score
 
-    added = [
-        _llm_only_metric(filing, metric, found[metric], located, snippet)
-        for metric in wanted
-        if metric in found
-    ]
+    added: list[ExtractedMetric] = []
+    for metric in wanted:
+        if metric not in printed_for:
+            continue
+        read = _llm_only_metric(filing, metric, printed_for[metric], located, snippet)
+        added.append(read)
+        _learn_alias(read, metric, snippet)
     return metrics + added
+
+
+def _printed_at(label: str, located: dict[str, LocatedTable]) -> str | None:
+    """The printed cell for a row the model named. The number always comes from the parser."""
+    wanted = normalise(label)
+    for table in located.values():
+        for row in table_parser.parse_rows(table.node):
+            if normalise(row.label) == wanted and row.raws:
+                return row.raws[0]
+    return None
+
+
+def _learn_alias(metric: ExtractedMetric, which: Metric, snippet: str) -> None:
+    """Remember a label the model resolved, so the next filing needs no model for it.
+
+    Only unambiguous evidence is learned: the row label must appear exactly once in the snippet
+    the model was given, and must not already mean a different metric.
+    """
+    label = metric.evidence.row_label or ""
+    if not label or table_parser.match_label(label) is not None:
+        return  # already known, or it disagrees with an existing alias: do not learn
+    if snippet.count(label) != 1:
+        return  # ambiguous row: which line did the model mean?
+    alias_memory.learn(normalise(label), which)
 
 
 def extract_filing(filing: FilingRef) -> ExtractionResult:

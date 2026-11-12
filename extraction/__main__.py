@@ -9,6 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
+from extraction import alias_memory
 from extraction.pipeline import extract_filing, fetch_filing
 from shared.config import COMPANIES, get_company, get_settings
 from shared.schemas import ExtractionResult
@@ -33,7 +34,18 @@ def main() -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--fixture", metavar="TICKER", help="one company, e.g. AAPL")
     group.add_argument("--all", action="store_true", help="all five configured companies")
+    group.add_argument(
+        "--aliases", action="store_true", help="labels the model taught the parser, then exit"
+    )
     args = parser.parse_args()
+
+    if args.aliases:
+        known = alias_memory.known()
+        if not known:
+            print("No learned aliases yet. The parser has not needed the model.")
+        for label, metric in sorted(known.items(), key=lambda kv: kv[1]):
+            print(f"  {metric:22} <- {label!r}")
+        return
 
     get_settings().ensure_dirs()
     tickers = [company.ticker for company in COMPANIES] if args.all else [args.fixture]

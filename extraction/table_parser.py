@@ -8,6 +8,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
+from extraction import alias_memory
 from extraction.locate import LocatedTable
 from shared.schemas import (
     ExtractedMetric,
@@ -147,15 +148,30 @@ def match_label(label: str) -> tuple[Metric, float] | None:
     for metric, aliases in ALIASES.items():
         if normalised in aliases:
             return metric, 1.0
+    learned = alias_memory.lookup(normalised)
+    if learned is not None:
+        return learned, alias_memory.LEARNED_LABEL_MATCH
     for metric, aliases in ALIASES.items():
         for alias in aliases:
             pattern = r"\b" + re.escape(alias).replace(r"\ ", r"[\s,]*") + r"\b"
             if re.fullmatch(pattern, normalised):
                 return metric, 0.85
     for metric, aliases in ALIASES.items():
-        if any(normalised.endswith(alias) or alias in normalised for alias in aliases):
-            return metric, 0.7
+        for alias in aliases:
+            for text in _qualified(normalised):
+                if text.startswith(alias):
+                    return metric, 0.7
     return None
+
+
+QUALIFIERS = ("consolidated ", "combined ", "total company ")
+
+
+def _qualified(normalised: str) -> list[str]:
+    """The label itself plus the label with a leading 'Consolidated'/'Combined' stripped."""
+    out = [normalised]
+    out += [normalised[len(q) :] for q in QUALIFIERS if normalised.startswith(q)]
+    return out
 
 
 def pick_rows(located: dict[str, LocatedTable]) -> dict[Metric, Match]:
