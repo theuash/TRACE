@@ -276,6 +276,37 @@ class WorkflowService:
     def verify_audit(self) -> AuditVerification:
         return verify_log(get_log())
 
+    def get_timeline(self, run_id: str) -> list[dict]:
+        """One event per completed step, plus every audit row for this run. Read-only."""
+        if self._row(run_id) is None:
+            raise KeyError(f"unknown run {run_id!r}")
+        values = self._state(run_id)
+        row = self._row(run_id) or (None, None, None, None, "", None)
+        events: list[dict] = [
+            {
+                "at": row[4] or "",
+                "kind": "step",
+                "name": step,
+                "detail": "",
+                "actor": "system",
+            }
+            for step in values.get("steps_completed", [])
+        ]
+        for entry in self.list_audit():
+            if entry.run_id != run_id:
+                continue
+            events.append(
+                {
+                    "at": entry.timestamp.isoformat(),
+                    "kind": entry.action.value,
+                    "name": entry.metric_id or "",
+                    "detail": entry.note or "",
+                    "actor": entry.actor,
+                }
+            )
+        events.sort(key=lambda event: event["at"])
+        return events
+
     def get_report(self) -> AccuracyReport | None:
         for (run_id,) in self._db.execute("SELECT run_id FROM runs ORDER BY created_at DESC"):
             report = self._state(run_id).get("report")

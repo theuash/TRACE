@@ -42,6 +42,22 @@ def test_run_pauses_then_resumes_without_repeating_a_side_effect(svc):
     assert svc.verify_audit().ok
 
 
+def test_timeline_lists_steps_and_audit_rows(svc):
+    run = svc.start_runs(RunRequest(tickers=["AAPL"]))[0]
+    svc.submit_decision(
+        ReviewDecision(
+            review_id=svc.list_reviews(ReviewStatus.PENDING)[0].review_id,
+            decision=DecisionType.APPROVE,
+            reviewer="tester",
+        )
+    )
+    events = svc.get_timeline(run.run_id)
+    kinds = {e["kind"] for e in events}
+    assert "step" in kinds
+    assert {"auto_approval", "escalation", "human_decision"} <= kinds
+    assert all(e["at"] for e in events)
+
+
 def test_failed_resume_is_recorded_on_the_run(svc, monkeypatch):
     """A provider blowing up mid-resume must leave the run FAILED, not a healthy PAUSED."""
     run = svc.start_runs(RunRequest(tickers=["AAPL"]))[0]

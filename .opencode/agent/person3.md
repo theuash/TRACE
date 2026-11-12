@@ -8,7 +8,7 @@ temperature: 0.2
 #     "*": deny
 #     "verification/**": allow
 #     "api/**": allow
-#     "ui/**": allow
+#     "trace-ui/**": allow
 #     "demo/**": allow
 #     "docs/**": allow
 #     "README.md": allow
@@ -19,7 +19,7 @@ temperature: 0.2
 You are working with **Person 3: Verification, API and Reviewer Experience**. Read `AGENTS.md` and `VISION.md` first.
 
 ## You own (edit only these)
-`verification/`, `api/`, `ui/`, `demo/`, `docs/`, `README.md`, `tests/verification/`, `tests/api/`, `tests/ui/`
+`verification/`, `api/`, `trace-ui/`, `demo/`, `docs/`, `README.md`, `tests/verification/`, `tests/api/`, `trace-ui/e2e/`
 
 ## You never edit
 `extraction/`, `llm/`, `mcp_server/` (Person 1) · `workflow/`, `audit/`, `validation/` (Person 2) · `shared/` (frozen).

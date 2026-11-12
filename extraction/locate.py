@@ -91,9 +91,20 @@ def _winner(tables: list[Any], name: str) -> tuple[int, int] | None:
 
 
 def scale_of(text: str) -> int | None:
-    """Nearest (last) 'In millions/thousands/billions' mention in the text."""
-    hits = SCALE_RE.findall(text)
-    return SCALE_BY_WORD[hits[-1].lower()] if hits else None
+    """Nearest 'In millions/thousands/billions' that is not the share-count qualifier.
+
+    Apple's caption reads "(in millions, except number of shares, which are reflected in
+    thousands, ...)". A naive last-match picks thousands and every value lands 1000x low, so
+    a 'thousands' mention qualified by 'except' or 'reflected' is skipped.
+    """
+    for match in reversed(list(SCALE_RE.finditer(text))):
+        word = match.group(1).lower()
+        if word == "thousands":
+            lead = text[max(0, match.start() - 60) : match.start()].lower()
+            if "except" in lead or "reflected" in lead:
+                continue
+        return SCALE_BY_WORD[word]
+    return None
 
 
 def _context(node: Any, limit: int = 400) -> str:

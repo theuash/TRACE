@@ -35,8 +35,8 @@ fetch_filing -> extract -> score -> validate -> decide
 
 ## Stack
 
-Python 3.11 · uv · LangGraph · FastAPI · Streamlit · SQLite · httpx · selectolax · pandas · Pydantic v2 ·
-Plotly · Ollama (local LLM) with Groq/Gemini free tiers as fallback.
+Python 3.11 · uv · LangGraph · FastAPI · React 18 + Vite + TypeScript · SQLite · httpx · selectolax · pandas · Pydantic v2 ·
+Recharts · Ollama (local LLM) with Groq/Gemini free tiers as fallback.
 
 ## Quick start
 
@@ -52,7 +52,7 @@ ollama pull qwen2.5:7b
 
 # 4. Run
 uv run uvicorn api.main:app --reload --port 8000     # backend
-uv run streamlit run ui/app.py                       # dashboard (new terminal)
+cd trace-ui && npm install && npm run dev        # dashboard on :5173
 
 # 5. Test
 uv run pytest
@@ -72,7 +72,7 @@ One owner per folder. Only the owning person edits a folder; contract files are 
 | `validation/` | `engine.py` (checks), `decide.py`, confidence scoring | Person 2 |
 | `verification/` | XBRL ground truth, accuracy report, calibration | Person 3 |
 | `api/` | FastAPI app, schemas at the boundary, `mock_service.py` | Person 3 |
-| `ui/` | Streamlit reviewer dashboard | Person 3 |
+| `trace-ui/` | React reviewer dashboard (Vite, TypeScript) | Person 3 |
 | `demo/` | Fault injection, prefetch, demo helpers, backup recording | Person 3 |
 | `docs/` | Architecture, demo script, `docs/requests/` hand-off notes | Person 3 |
 | `shared/` | `schemas.py`, `interfaces.py`, `config.py` (frozen contracts) | all |
@@ -90,7 +90,7 @@ Each agent knows its folders, task list, and rules from `AGENTS.md`.
 |---|---|---|
 | `person1` | Data extraction | `extraction/`, `llm/`, `mcp_server/` |
 | `person2` | Workflow engine, trust layer | `workflow/`, `audit/`, `validation/` |
-| `person3` | Verification, API, reviewer experience | `verification/`, `api/`, `ui/`, `demo/`, `docs/` |
+| `person3` | Verification, API, reviewer experience | `verification/`, `api/`, `trace-ui/`, `demo/`, `docs/` |
 
 Nobody imports a teammate's module directly. Every cross-folder call goes through
 `load_provider("<name>")` from `shared/interfaces.py`, so an unfinished module can be swapped for a fake.

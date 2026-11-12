@@ -14,7 +14,7 @@ before editing anything**.
 |---|---|---|
 | **1** | Data extraction | `extraction/`, `llm/`, `mcp_server/`, `tests/extraction/`, `tests/llm/`, `tests/fixtures/` |
 | **2** | Workflow engine, trust layer | `workflow/`, `audit/`, `validation/`, `tests/workflow/`, `tests/audit/`, `tests/validation/` |
-| **3** | Verification, API, reviewer experience | `verification/`, `api/`, `ui/`, `demo/`, `docs/`, `README.md`, `tests/verification/`, `tests/api/`, `tests/ui/` |
+| **3** | Verification, API, reviewer experience | `verification/`, `api/`, `trace-ui/`, `demo/`, `docs/`, `README.md`, `tests/verification/`, `tests/api/`, `trace-ui/e2e/` |
 | all (frozen) | Contracts | `shared/`, `tests/shared/`, `AGENTS.md`, `VISION.md`, `opencode.json`, `.opencode/`, `scripts/`, `.env.example` |
 
 **STOP CHECK before every edit:** is this path in my row? If not, do not edit it. Instead:
@@ -85,7 +85,7 @@ operating income, cash and equivalents. Optional: gross profit, diluted EPS.
 uv sync
 cp .env.example .env                       # set SEC_USER_AGENT
 uv run uvicorn api.main:app --reload --port 8000
-uv run streamlit run ui/app.py
+cd trace-ui && npm install && npm run dev        # dashboard on :5173
 uv run pytest
 uv run ruff check . && uv run ruff format .
 uv run python scripts/check_ownership.py   # before every PR
