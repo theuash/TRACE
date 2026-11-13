@@ -1,24 +1,28 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, Gauge as GaugeIcon, ShieldCheck, UserCheck, Bot } from "lucide-react";
-import { useThreads } from "@/hooks/use-trace";
+import { useThreads, useReport } from "@/hooks/use-trace";
 import { StatusBadge } from "@/components/status-badge";
 import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatPercent, formatDateTime } from "@/lib/format";
+import { latestRunPerTicker } from "@/lib/threads";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export function OverviewPage() {
+  const navigate = useNavigate();
   const { data: threads, isLoading, error } = useThreads();
-  const threadList = threads ?? [];
+  const { data: report } = useReport();
+  // One run per company: a re-audit must not double every count on this page.
+  const threadList = latestRunPerTicker(threads);
 
   const pending = threadList.filter((t) => t.status === "PAUSED_FOR_REVIEW" || t.status === "HUMAN_REVIEWED");
+  const pendingItems = pending.reduce((total, t) => total + (t.flagged_count ?? 0), 0);
   const completed = threadList.filter((t) => t.status === "COMPLETED" || t.status === "AUTO_APPROVED");
   const autoApprovedCount = threadList.reduce((acc, t) => acc + (t.auto_approved_count ?? 0), 0);
   const escalatedCount = threadList.reduce((acc, t) => acc + (t.flagged_count ?? 0), 0);
-  const reported = threadList.filter((t) => t.status === "COMPLETED" && t.accuracy_pct != null);
-  const accuracyPct = reported.length ? reported.reduce((acc, t) => acc + (t.accuracy_pct ?? 0), 0) / reported.length : 0;
-  const precisionPct = reported.length ? reported.reduce((acc, t) => acc + (t.escalation_precision_pct ?? 0), 0) / reported.length : 0;
+  const accuracyPct = report?.accuracy_pct ?? null;
+  const precisionPct = report && report.escalated_count > 0 ? report.escalation_precision_pct : null;
 
   const needsAttention = [...pending].sort((a, b) => b.flagged_count - a.flagged_count).slice(0, 5);
   const recent = [...threadList].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 6);
@@ -27,6 +31,7 @@ export function OverviewPage() {
     .filter((t) => t.status === "COMPLETED" || t.status === "AUTO_APPROVED")
     .map((t) => ({
       ticker: t.ticker,
+      thread_id: t.thread_id,
       autoApproved: t.auto_approved_count ?? 0,
       escalated: t.flagged_count ?? 0,
     }));
@@ -56,7 +61,14 @@ export function OverviewPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard title="Pending reviews" value={String(pending.length)} subtitle="Awaiting reviewer action" icon={<UserCheck className="h-4 w-4" />} tone="warning" dataTestId="kpi-pending" />
+        <KpiCard
+          title="Pending reviews"
+          value={String(pendingItems)}
+          subtitle={`${pending.length} run(s) awaiting a reviewer`}
+          icon={<UserCheck className="h-4 w-4" />}
+          tone="warning"
+          dataTestId="kpi-pending"
+        />
         <KpiCard title="Completed audits" value={String(completed.length)} subtitle="Across all companies" icon={<CheckCircle2 className="h-4 w-4" />} dataTestId="kpi-completed" />
         <KpiCard title="Auto-approved" value={String(autoApprovedCount)} subtitle="No escalation required" icon={<Bot className="h-4 w-4" />} tone="success" dataTestId="kpi-auto-approved" />
         <KpiCard title="Escalated" value={String(escalatedCount)} subtitle="Flagged for human review" icon={<AlertTriangle className="h-4 w-4" />} tone="danger" dataTestId="kpi-escalated" />
@@ -101,8 +113,28 @@ export function OverviewPage() {
                   <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="autoApproved" name="Auto-approved" fill="hsl(142.1 76.2% 36.3%)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="escalated" name="Escalated" fill="hsl(0 72% 51%)" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="autoApproved"
+                    name="Auto-approved"
+                    fill="hsl(142.1 76.2% 36.3%)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={48}
+                    cursor="pointer"
+                    onClick={(entry: { thread_id?: string }) => {
+                      if (entry?.thread_id) navigate(`/filings/${entry.thread_id}`);
+                    }}
+                  />
+                  <Bar
+                    dataKey="escalated"
+                    name="Escalated"
+                    fill="hsl(0 72% 51%)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={48}
+                    cursor="pointer"
+                    onClick={(entry: { thread_id?: string }) => {
+                      if (entry?.thread_id) navigate(`/filings/${entry.thread_id}`);
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -129,8 +161,12 @@ export function OverviewPage() {
             </thead>
             <tbody>
               {recent.map((t) => (
-                <tr key={t.thread_id} className="border-b last:border-0">
-                  <td className="py-2.5 pr-4 font-medium">{t.company_name}</td>
+                <tr key={t.thread_id} className="border-b last:border-0 hover:bg-accent/40">
+                  <td className="py-2.5 pr-4 font-medium">
+                    <Link to={`/filings/${t.thread_id}`} className="text-foreground hover:underline">
+                      {t.company_name}
+                    </Link>
+                  </td>
                   <td className="py-2.5 pr-4 tabular-nums">{t.ticker}</td>
                   <td className="py-2.5 pr-4 tabular-nums">{t.fiscal_year ?? "—"}</td>
                   <td className="py-2.5 pr-4"><StatusBadge status={t.status} /></td>

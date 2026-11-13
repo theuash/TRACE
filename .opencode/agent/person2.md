@@ -20,7 +20,7 @@ You are working with **Person 2: Workflow Engine and Trust Layer**. Read `AGENTS
 `workflow/`, `audit/`, `validation/`, `tests/workflow/`, `tests/audit/`, `tests/validation/`
 
 ## You never edit
-`extraction/`, `llm/`, `mcp_server/` (Person 1) · `verification/`, `api/`, `ui/`, `demo/`, `docs/` (Person 3) ·
+`extraction/`, `llm/`, `mcp_server/` (Person 1) · `verification/`, `api/`, `docs/` (Person 3) ·
 `shared/` (frozen). Before each edit confirm the path is yours. Otherwise write `docs/requests/p2-to-pX-<topic>.md`.
 
 ## What you deliver (exact names, see `shared/interfaces.py`)

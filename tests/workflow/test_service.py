@@ -16,10 +16,10 @@ from workflow.service import WorkflowService
 
 
 @pytest.fixture()
-def svc(tmp_path):
-    service = WorkflowService(tmp_path / "runs.db", tmp_path / "ckpt.db")
+def svc(db_context):
+    service = WorkflowService(db_context.dsn, schema=db_context.schema)
     yield service
-    service._db.close()
+    service.close()
 
 
 def test_run_pauses_then_resumes_without_repeating_a_side_effect(svc):

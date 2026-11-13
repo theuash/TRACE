@@ -1,4 +1,4 @@
-"""Demo fault injection: corrupt one extracted value before validation sees it.
+"""Fault injection: corrupt one extracted value before validation sees it.
 
 The workflow calls this right after extraction, so the corrupted number flows through confidence,
 validation, decision and audit exactly like a real extraction error would.

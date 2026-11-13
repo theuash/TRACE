@@ -1,17 +1,20 @@
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useThreads } from "@/hooks/use-trace";
+import { Link, useSearchParams } from "react-router-dom";
+import { useThreads, useReport } from "@/hooks/use-trace";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPercent, formatDateTime } from "@/lib/format";
+import { latestRunPerTicker } from "@/lib/threads";
 export function FilingsPage() {
   const { data: threads, isLoading, error } = useThreads();
+  const { data: report } = useReport();
   const [searchParams] = useSearchParams();
   const q = (searchParams.get("search") ?? "").trim().toLowerCase();
 
   const rows = useMemo(() => {
-    const list = threads ?? [];
+    // One row per company (newest run). Older runs of the same company stay in the audit log.
+    const list = latestRunPerTicker(threads);
     const filtered = q
       ? list.filter(
           (t) =>
@@ -58,8 +61,12 @@ export function FilingsPage() {
           </thead>
           <tbody>
             {rows.map((t) => (
-              <tr key={t.thread_id} className="border-b last:border-0">
-                <td className="py-2.5 pr-4 font-medium">{t.company_name}</td>
+              <tr key={t.thread_id} className="border-b last:border-0 hover:bg-accent/40">
+                <td className="py-2.5 pr-4 font-medium">
+                  <Link to={`/filings/${t.thread_id}`} className="text-foreground hover:underline">
+                    {t.company_name}
+                  </Link>
+                </td>
                 <td className="py-2.5 pr-4 tabular-nums">{t.ticker}</td>
                 <td className="py-2.5 pr-4 tabular-nums">{t.cik}</td>
                 <td className="py-2.5 pr-4 tabular-nums">{t.fiscal_year ?? "—"}</td>
@@ -68,7 +75,9 @@ export function FilingsPage() {
                 </td>
                 <td className="py-2.5 pr-4 tabular-nums">{t.flagged_count}</td>
                 <td className="py-2.5 pr-4 tabular-nums">{t.auto_approved_count}</td>
-                <td className="py-2.5 pr-4 tabular-nums">{formatPercent(t.accuracy_pct ?? 0, 1)}</td>
+                <td className="py-2.5 pr-4 tabular-nums">
+                  {formatPercent(report?.by_company?.[t.ticker] ?? t.accuracy_pct ?? null, 1)}
+                </td>
                 <td className="py-2.5 pr-4 text-muted-foreground">{formatDateTime(t.updated_at)}</td>
               </tr>
             ))}

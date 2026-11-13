@@ -22,9 +22,13 @@ export function formatUsdCompact(value: number | null | undefined): string {
   return compactUsd.format(value);
 }
 
+/**
+ * Percentages arrive from the API already scaled (87.5 means 87.5%), so this only formats.
+ * Ratios (confidence 0.85) must be multiplied by 100 before they get here.
+ */
 export function formatPercent(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return `${(value * 100).toFixed(digits)}%`;
+  return `${value.toFixed(digits)}%`;
 }
 
 export function formatRatio(value: number | null | undefined, digits = 2): string {

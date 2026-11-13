@@ -108,7 +108,7 @@ If we only get one thing right, it is this:
 highlighting, one-click confirm on Yellow plus the Red approval guard, hash-chained log + verify button,
 scoreboard with calibration chart, adaptive threshold *suggestions*, MCP tool wrappers.
 
-**Out:** PDF filings, non-US filers, Docker/Postgres/Redis, vector DB or RAG, user accounts, deployment to cloud.
+**Out:** PDF filings, non-US filers, vector DB or RAG, user accounts, deployment to cloud. **In:** Neon PostgreSQL for the runs, the idempotency ledger and the hash-chained audit log; the filing and XBRL caches stay on disk.
 
 ## Success metrics (what the scoreboard shows)
 

@@ -54,16 +54,31 @@ export interface Metric {
   confidence_label: ConfidenceLabel;
   confidence_signals: ConfidenceSignals;
   source_snippet: string;
+  /** The exact substring inside source_snippet to highlight. */
+  matched_text?: string;
   source_header: string;
   source_row: string;
+  /** The SEC document this value was read from. */
+  source_url?: string;
   decision_state: DecisionState;
 }
 
 export interface FlaggedItem extends Metric {
+  /** Stable per-metric identity from the API. List rows and decisions key on this, never on
+   * metric_name: the same metric can legitimately produce more than one escalation. */
+  review_id?: string;
+  /** Server-computed risk tier. The UI only renders it, never recomputes it. */
+  tier?: "red" | "yellow" | "green";
   reasons: string[];
   rules: string[];
   severity: Severity;
   escalation_types: EscalationType[];
+  /** What the human decided, read from the audit log. */
+  decided_at?: string | null;
+  reviewer?: string | null;
+  reviewer_note?: string | null;
+  audit_seq?: number | null;
+  corrected_value?: number | null;
 }
 
 export interface ValidationCheck {
@@ -77,9 +92,17 @@ export interface ValidationCheck {
 
 export interface Thresholds {
   confidence_threshold: number;
+  confidence_critical: number;
   yoy_change_pct: number;
   accounting_tolerance_pct: number;
   segment_tolerance_pct: number;
+}
+
+export interface CalibrationBucket {
+  lower: number;
+  upper: number;
+  count: number;
+  accuracy: number;
 }
 
 export interface AccuracyReport {
@@ -92,10 +115,19 @@ export interface AccuracyReport {
   escalation_precision_by_type: Record<string, number>;
   escalation_recall_pct: number;
   per_metric_accuracy: Record<string, number>;
+  by_company: Record<string, number>;
   metric_details: MetricAccuracyDetail[];
+  calibration: CalibrationBucket[];
+  missing_truth: string[];
+}
+
+export interface EscalationEstimate {
+  escalations: number;
 }
 
 export interface MetricAccuracyDetail {
+  /** Company the value belongs to. Missing on older payloads. */
+  ticker?: string;
   metric: string;
   extracted: number;
   final: number;
@@ -116,6 +148,8 @@ export interface AuditLogRow {
   timestamp: string;
   prev_hash: string;
   row_hash: string;
+  /** What the row was: a human decision, an auto approval, an escalation, a policy change. */
+  action?: string;
 }
 
 export interface VerifyResult {
@@ -148,6 +182,8 @@ export interface CompanyInfo {
   ticker: string;
   cik: string;
   industry: string;
+  /** True for the five companies the demo ships with; absent on the plain `/companies` list. */
+  configured?: boolean;
 }
 
 export interface ThreadSummary {
@@ -161,7 +197,6 @@ export interface ThreadSummary {
   auto_approved_count: number;
   created_at: string;
   updated_at: string;
-  demo_only: boolean;
   accuracy_pct?: number;
   original_accuracy_pct?: number;
   auto_approval_accuracy_pct?: number;
@@ -186,7 +221,6 @@ export interface AuditStatus {
   anomaly_explanations: Record<string, AnomalyExplanation>;
   accuracy_report: AccuracyReport | null;
   thresholds: Thresholds;
-  demo_only: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -194,13 +228,31 @@ export interface AuditStatus {
 export interface HealthResponse {
   status: "ok" | "healthy" | "degraded";
   version: string;
+  /** "real" = real workflow + XBRL verification, "mock" = fixture data. */
+  mode?: "mock" | "real";
+  database?: DatabaseStatus;
+}
+
+/** What the store behind the app looks like right now. */
+export interface DatabaseStatus {
+  backend: "postgresql" | "none" | string;
+  host: string;
+  ok: boolean;
+  latency_ms: number | null;
+  error: string | null;
+}
+
+export interface DatabaseInfo extends DatabaseStatus {
+  pooled: boolean;
+  tables: Record<string, number>;
+  last_audit_write: string | null;
+  last_run_write: string | null;
 }
 
 export interface StartAuditRequest {
   cik: string;
   confidence_threshold: number;
   yoy_threshold_pct: number;
-  demo_only: boolean;
 }
 
 export interface ReviewDecisionInput {

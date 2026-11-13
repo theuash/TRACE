@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Copy, Check } from "lucide-react";
 import { useThreadStatus, useThreadTimeline } from "@/hooks/use-trace";
 import { StatusBadge, ConfidenceBadge, DecisionStateBadge } from "@/components/status-badge";
@@ -38,6 +38,7 @@ export function FilingDetailPage() {
 
   const accuracy = status.accuracy_report;
 
+  const decisionByMetric = new Map((status.flagged_items ?? []).map((f) => [f.metric_name, f]));
   const validationGroups = new Map<string, typeof status.validation_checks>();
   for (const check of status.validation_checks) {
     const list = validationGroups.get(check.metric_name) ?? [];
@@ -79,7 +80,6 @@ export function FilingDetailPage() {
             </div>
             {status.accuracy_report ? <div className="text-right">Accuracy {formatPercent(status.accuracy_report.accuracy_pct, 1)}</div> : null}
           </div>
-          {status.demo_only ? <Badge variant="warning">Demo preset</Badge> : null}
         </CardContent>
       </Card>
 
@@ -115,9 +115,41 @@ export function FilingDetailPage() {
                       <DecisionStateBadge state={m.decision_state} />
                     </button>
                     {expandedMetric === m.metric_name ? (
-                      <div className="border-t p-3">
+                      <div className="border-t p-3 space-y-3">
                         <ConfidenceBar value={m.confidence} label={m.confidence_label} signals={m.confidence_signals} id={m.metric_name} />
-                        <div className="mt-2 font-mono text-xs break-words">{m.source_snippet}</div>
+                        <div className="font-mono text-xs break-words text-muted-foreground">{m.source_snippet}</div>
+                        {m.source_url ? (
+                          <a
+                            href={m.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-info hover:underline"
+                          >
+                            Open this value on SEC.gov ↗
+                          </a>
+                        ) : null}
+                        {m.decision_state !== "FLAGGED" && m.decision_state !== "PENDING" ? (
+                          <div className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm">
+                            <div className="font-medium text-success">
+                              {m.decision_state.toLowerCase()} by {(decisionByMetric.get(m.metric_name)?.reviewer ?? "a reviewer")}
+                              {decisionByMetric.get(m.metric_name)?.decided_at ? ` · ${formatDateTime(decisionByMetric.get(m.metric_name)!.decided_at!)}` : ""}
+                            </div>
+                            {decisionByMetric.get(m.metric_name)?.reviewer_note ? <p className="mt-1 text-muted-foreground">“{decisionByMetric.get(m.metric_name)!.reviewer_note}”</p> : null}
+                            {decisionByMetric.get(m.metric_name)?.corrected_value !== null && decisionByMetric.get(m.metric_name)?.corrected_value !== undefined ? (
+                              <p className="mt-1 text-muted-foreground">
+                                Corrected to {formatUsdFull(decisionByMetric.get(m.metric_name)!.corrected_value!)}
+                              </p>
+                            ) : null}
+                            {(decisionByMetric.get(m.metric_name)?.audit_seq) ? (
+                              <Link
+                                to={`/audit?thread=${status.thread_id}`}
+                                className="mt-1 inline-block text-xs text-info hover:underline"
+                              >
+                                audit row {decisionByMetric.get(m.metric_name)!.audit_seq} →
+                              </Link>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

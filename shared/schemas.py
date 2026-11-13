@@ -451,7 +451,7 @@ class AccuracyReport(Base):
 
 
 class FaultSpec(Base):
-    """Demo fault injection: corrupt one extracted value before validation runs."""
+    """Fault injection: corrupt one extracted value before validation runs."""
 
     ticker: str
     metric: Metric = Metric.TOTAL_ASSETS

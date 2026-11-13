@@ -104,19 +104,29 @@ Scope target: 5 companies (AAPL, MSFT, TSLA, NVDA, AMZN), 8 core metrics (+ opti
 - **`docs/requests/`:** cross-team request docs exist (P2→P1 local filing source, P2 contract nullable escalation value, P2→P3 API contract) — useful integration handoff artifacts.
 - **Repo docs:** `README.md`, `VISION.md`, `AGENTS.md`, `GIT_POLICY.md`, `PLAN_P2.md`, `HEAD_LOG.md` present and informative.
 
-**Not implemented / missing (per ownership targets):**
-- `verification/` Python package/module **missing** (`verify_company`, XBRL client/tag map, report builder/calibration logic not present).
-- `api/` Python backend **missing** (`api.main:app`, real/mock service wrapper per P3 contract not present at repo root package).
-- `demo/` helpers **missing** (e.g. prefetch/fault/demo utilities described in plans/readme targets).
-- `tests/verification/`, `tests/api/`, `trace-ui` e2e coverage beyond scaffold not confirmed executed.
-- `README.md` still states `ui/app.py` (Streamlit) in layout text while actual dashboard is `trace-ui/` (React/Vite) — documentation alignment needed.
-- UI currently emphasizes mock mode; real backend parity with `workflow.service` contract is pending.
+**Implemented (2026-11-12, P3):**
+- **`verification/` package:** `xbrl_client.py` (cached, throttled SEC Company Facts client),
+  `tag_map.py` (metric → US-GAAP concepts), `ground_truth.py` (`verify_company` → per-metric
+  `AccuracyRow`s, tolerance from `accuracy_tolerance_pct`, missing truth recorded not scored),
+  `report.py` (`build_report` → totals, escalation precision, per-metric/company accuracy,
+  calibration buckets, `missing_truth`).
+- **`api/` package:** `main.py` (FastAPI app with `/health`, `/companies`, `/audits`, `/threads`,
+  `/threads/{id}/status|timeline|resume`, `/audit-logs`, `/audit-logs/verify`, `/thresholds`,
+  `/thresholds/estimate`, `/report`, `/demo/reset|tamper|failure-mode`), `adapters.py` (the only
+  place that maps workflow contracts to `trace-ui/src/api/types.ts` shapes), `mock_service.py`
+  (fixture-backed `WorkflowService` for `USE_MOCK_SERVICE=true`). All service calls run on one
+  worker thread (`_serial`) because the SQLite stores are thread-affine.
+- **`demo/prefetch.py`:** pre-warms filings and XBRL for all 5 companies so the demo runs offline.
+- **Tests:** `tests/api/test_api.py` (3), `tests/verification/` (5) — all passing.
+
+**Still open in this area:**
+- `tests/verification/`, `tests/api/` are present and passing; `trace-ui` e2e still only has the scaffold smoke test (not executed in this workspace; `npm run build` passes).
 
 ## 4) Test and quality status
 
 ### Pytest (repo)
-- **Most recent full run result observed:** `75 passed, 3 skipped, 5 errors in 1.90s`.
-- **Passing areas include:** shared contracts, audit log, validation checks/decide, workflow service/idempotency/kill-resume (core P2), many extraction/LLM tests.
+- **Most recent full run result observed:** `83 passed, 3 skipped, 5 errors in 2.07s` (after adding `tests/api/` and `tests/verification/`).
+- **Passing areas include:** shared contracts, audit log, validation checks/decide, workflow service/idempotency/kill-resume (core P2), many extraction/LLM tests, **the new API contract tests and verification/report tests**.
 - **Errors (5, collection/setup in extraction):**
   - `tests/extraction/test_edgar.py::test_cached_filing_ref_short_circuits` — missing fixture `settings`
   - `tests/extraction/test_locate.py::test_picks_the_statement_not_the_note` — missing fixture `html_file`
@@ -126,7 +136,7 @@ Scope target: 5 companies (AAPL, MSFT, TSLA, NVDA, AMZN), 8 core metrics (+ opti
 - **Interpretation:** core logic/tests largely pass, but extraction test harness/fixtures/helpers are incomplete or mismatched for those tests in current tree.
 
 ### Ruff
-- **5 lint errors** currently reported (`E501` line too long in contract/shared files among others). Needs cleanup before clean CI/PR quality bar.
+- **5 lint errors** remain, all pre-existing `E501` in the frozen `shared/` files (`config.py`, `interfaces.py`, `schemas.py`). `api/`, `verification/`, `demo/`, `tests/api/`, `tests/verification/` are clean. Fixing the shared ones needs a `contract/` branch agreed by all three people.
 
 ### Frontend checks
 - `trace-ui` dependencies not installed locally (`node_modules` absent), so `npm run build` / `npm run test:e2e` not verified in this environment.
@@ -136,13 +146,12 @@ Scope target: 5 companies (AAPL, MSFT, TSLA, NVDA, AMZN), 8 core metrics (+ opti
 
 ## 5) Known issues, risks, and integration gaps
 
-- **P3 backend/verification gap:** No `api/` or `verification/` implementation yet; UI cannot fully run against real workflow/XBRL path without this layer.
-- **Mock-vs-real integration gap:** `trace-ui` mock server exists, but HTTP contract alignment to real `WorkflowService` endpoints/shape must be completed and validated.
+- **P3 integration status:** `api/` (real + mock) and `verification/` now exist and are tested; the UI still defaults to mock mode (`VITE_API_MODE=mock`) and must be started with `VITE_API_MODE=http` to read the backend.
+- **Mock-vs-real integration gap:** the HTTP contract is implemented and exercised via TestClient, but not yet driven through the live browser UI (`npm run build` passes; e2e against the real backend not yet run).
 - **Demo data readiness:** 5-company cached filing/docs and fixture coverage incomplete (only AAPL/MSFT fixtures confirmed). TSLA/NVDA/AMZN extraction runs pending SEC UA/config and possibly downloads.
 - **Environment readiness:** `.env` appears not fully configured (SEC user agent/LLM settings). Real SEC access and optional LLM behavior depend on this.
-- **Test harness issues:** 5 extraction setup errors block a fully green pytest run.
-- **Lint debt:** 5 ruff issues outstanding.
-- **Doc drift:** README/agent docs still reference `ui/app.py` in places while implementation is `trace-ui/` (React).
+- **Test harness issues:** 5 extraction setup errors (`html_file`, `make_filing` fixtures) block a fully green pytest run — owned by Person 1, see `docs/requests/p3-to-p1-broken-extraction-tests.md`.
+- **Lint debt:** 5 pre-existing `E501` issues in frozen `shared/` files.
 - **Working tree not clean:** multiple modified/untracked files (including contract-adjacent docs/agent instructions and P2/P1 code/tests) should be reviewed/committed coherently by owners.
 
 ## 6) What is left (prioritized)
@@ -199,4 +208,11 @@ Scope target: 5 companies (AAPL, MSFT, TSLA, NVDA, AMZN), 8 core metrics (+ opti
 
 ---
 
-**Bottom line:** Core extraction + workflow/audit/validation foundations are substantially implemented and mostly tested, with strong progress on deterministic confidence, escalation/decision logic, idempotency, and audit integrity. The main remaining work is **P3 integration and verification** (real API + XBRL/accuracy reporting + demo hardening), **full 5-company extraction/fixture readiness**, and **test/lint/demo polish** to reach the stated definition of done.
+**Bottom line (updated):** P1 extraction and P2 workflow/audit/validation were already substantially
+implemented and mostly tested. **P3's missing layer is now built:** `verification/` (XBRL ground
+truth + accuracy/calibration report), `api/` (FastAPI routes, contract-to-UI adapters, mock
+service), `demo/prefetch.py`, and tests for both — so the dashboard can run against the real
+workflow instead of only its in-browser mock. Still open: 5 pre-existing extraction test fixture
+errors (P1), 5 ruff `E501` in frozen `shared/`, `npm run build` passes but browser e2e against the
+live backend has not been run, and the 5-company offline cache/prefetch still needs a valid
+`SEC_USER_AGENT`.

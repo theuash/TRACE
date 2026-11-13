@@ -8,7 +8,7 @@ Who owns what
 -------------
 Person 1: fetch_filing, extract_filing, score_extraction, explain_anomaly, (llm.client)
 Person 2: run_validations, decide, workflow_service, and the fakes in workflow/fakes.py
-Person 3: verify_company, build_report, mock_service, and the API app
+Person 3: verify_company, build_report, and the API app
 """
 
 from __future__ import annotations
@@ -110,8 +110,7 @@ class BuildReport(Protocol):
 
 
 class WorkflowService(Protocol):
-    """Person 2 implements this in workflow/service.py. Person 3 wraps it in the FastAPI app
-    and also ships api/mock_service.py implementing the same Protocol with fixture data."""
+    """Person 2 implements this in workflow/service.py. Person 3 wraps it in the FastAPI app."""
 
     def start_runs(self, request: RunRequest) -> list[RunSummary]: ...
     def list_runs(self) -> list[RunSummary]: ...
@@ -146,7 +145,6 @@ PROVIDERS: dict[str, str] = {
     # Person 3
     "verify_company": "verification.ground_truth:verify_company",
     "build_report": "verification.report:build_report",
-    "mock_service": "api.mock_service:get_service",
 }
 
 # Person 2's stand-ins so the graph runs before Person 1 / Person 3 finish. Used when USE_FAKES=true.

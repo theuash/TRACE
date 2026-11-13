@@ -20,7 +20,7 @@ You are working with **Person 1: Data Extraction**. Read `AGENTS.md` and `VISION
 `extraction/`, `llm/`, `mcp_server/`, `tests/extraction/`, `tests/llm/`, `tests/fixtures/`
 
 ## You never edit
-`workflow/`, `audit/`, `validation/` (Person 2) · `verification/`, `api/`, `ui/`, `demo/`, `docs/` (Person 3) ·
+`workflow/`, `audit/`, `validation/` (Person 2) · `verification/`, `api/`, `docs/` (Person 3) ·
 `shared/` (frozen). Before each edit confirm the path is yours. Otherwise write `docs/requests/p1-to-pX-<topic>.md`.
 
 ## What you deliver (exact names, see `shared/interfaces.py`)

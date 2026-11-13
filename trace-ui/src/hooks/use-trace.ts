@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createTraceApi } from "../api/client";
-import type { AuditLogFilters, StartAuditRequest } from "../api/types";
+import type { AuditLogFilters, StartAuditRequest, Thresholds } from "../api/types";
 
 export const api = createTraceApi();
 
@@ -11,16 +11,21 @@ export function useHealth() {
   });
 }
 
-export function useDataMode() {
-  const mode = (import.meta.env.VITE_API_MODE as "mock" | "http" | undefined) ?? "mock";
-  const { data } = useHealth();
-  return { mode, healthStatus: data?.status ?? "unknown" };
-}
-
 export function useCompanies() {
   return useQuery({
     queryKey: ["companies"],
     queryFn: () => api.listCompanies(),
+  });
+}
+
+export function useCompanySearch(query: string) {
+  const trimmed = query.trim();
+  return useQuery({
+    queryKey: ["companies", "search", trimmed],
+    queryFn: () => api.searchCompanies(trimmed),
+    enabled: trimmed.length >= 2,
+    staleTime: 60_000,
+    retry: false,
   });
 }
 
@@ -91,29 +96,57 @@ export function useResume() {
   });
 }
 
-export function useResetDemo() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => api.resetDemo(),
-    onSuccess: () => {
-      queryClient.clear();
-    },
+
+export function useReport() {
+  return useQuery({
+    queryKey: ["report"],
+    queryFn: () => api.getReport(),
+    // The report is a verification run: expensive and stable between decisions.
+    staleTime: 30_000,
   });
 }
 
-export function useTamperWithLastRow() {
+export function useThresholds() {
+  return useQuery({
+    queryKey: ["thresholds"],
+    queryFn: () => api.getThresholds(),
+    staleTime: 10_000,
+  });
+}
+
+export function useSetThresholds() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api.tamperWithLastRow(),
-    onSuccess: () => {
+    mutationFn: (thresholds: Thresholds) => api.setThresholds(thresholds),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(["thresholds"], saved);
       queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
-      queryClient.invalidateQueries({ queryKey: ["audit-logs", "verify"] });
     },
   });
 }
 
-export function useSetFailureMode() {
+export function useEstimateEscalations() {
   return useMutation({
-    mutationFn: (enabled: boolean) => api.setFailureMode(enabled),
+    mutationFn: (thresholds: Thresholds) => api.estimateEscalations(thresholds),
+  });
+}
+
+export function useDatabase() {
+  return useQuery({
+    queryKey: ["database"],
+    queryFn: () => api.getDatabase(),
+    // The database panel is a status display: a stale second is fine, a cold Neon project is not.
+    staleTime: 10_000,
+    retry: 1,
+  });
+}
+
+export function usePingDatabase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.pingDatabase(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["database"] });
+    },
   });
 }

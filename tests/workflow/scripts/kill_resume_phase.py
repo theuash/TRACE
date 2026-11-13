@@ -2,18 +2,32 @@
 
 python kill_resume_phase.py start
 python kill_resume_phase.py resume '{"run_id": "..."}'
+
+The two processes share only the database: the run, its side effects and the audit chain live
+in PostgreSQL, so a hard kill between the phases loses nothing.
 """
 
 import json
 import os
 import sys
-from pathlib import Path
 
 from shared.schemas import DecisionType, ReviewDecision, ReviewStatus, RunRequest
 from workflow.service import WorkflowService
 
-DATA = Path(os.environ["P2_TEST_DATA"])
-svc = WorkflowService(DATA / "runs.db", DATA / "ckpt.db")
+DSN = os.environ["TRACE_TEST_DSN"]
+SCHEMA = os.environ["TRACE_TEST_SCHEMA"]
+
+import audit.log as audit_log
+from audit.log import AuditLog
+from workflow.idempotency import IdempotencyStore
+
+# The two phases are separate processes: point the singletons at the test schema.
+audit_log._DEFAULT = AuditLog(DSN, schema=SCHEMA)
+import workflow.idempotency as idem
+
+idem._STORE = IdempotencyStore(DSN, schema=SCHEMA)
+
+svc = WorkflowService(DSN, schema=SCHEMA)
 phase = sys.argv[1]
 
 if phase == "start":

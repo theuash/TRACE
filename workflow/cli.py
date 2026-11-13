@@ -1,7 +1,7 @@
-"""Terminal demo of the Person 2 stack - no frontend needed.
+"""Run the Person 2 stack from the terminal - no frontend needed.
 
     uv run python -m workflow.cli            # clean filing: one Yellow pause
-    uv run python -m workflow.cli --fault    # injected fault: three Red, guard demo
+    uv run python -m workflow.cli --fault    # injected fault: three Red, guard check
 
 Uses `USE_FAKES=true` unless the env says otherwise.
 """
@@ -74,7 +74,7 @@ def main() -> int:
         try:
             service.submit_decision(
                 ReviewDecision(
-                    review_id=red.review_id, decision=DecisionType.APPROVE, reviewer="demo"
+                    review_id=red.review_id, decision=DecisionType.APPROVE, reviewer="cli"
                 )
             )
             print("  approved a Red value - the guard did not fire")
@@ -89,7 +89,7 @@ def main() -> int:
                     review_id=review.review_id,
                     decision=DecisionType.EDIT,
                     corrected_value=review.value,
-                    reviewer="demo",
+                    reviewer="cli",
                     note="re-read the filing",
                 )
             )
@@ -98,7 +98,7 @@ def main() -> int:
                 ReviewDecision(
                     review_id=review.review_id,
                     decision=DecisionType.APPROVE,
-                    reviewer="demo",
+                    reviewer="cli",
                     note="checked in the terminal",
                 )
             )

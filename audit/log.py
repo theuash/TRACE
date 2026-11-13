@@ -1,53 +1,42 @@
-"""Append-only, hash-chained audit log.
+"""Append-only, hash-chained audit log, stored in PostgreSQL (Neon).
 
 Two independent layers stop history being rewritten:
 
-1. SQLite triggers `RAISE(ABORT)` on any UPDATE or DELETE of `audit_entries`.
-2. Every row stores `prev_hash` and `hash = AuditEntry.compute_hash()`, so even a direct file edit
-   is detectable by `audit/verify.py`.
+1. Database triggers raise on any UPDATE, DELETE or TRUNCATE of `audit_entries`
+   (see `db/migrations/0003_append_only.sql` and `0004_append_only_truncate.sql`).
+2. Every row stores `prev_hash` and `hash = AuditEntry.compute_hash()`, so even a change that
+   bypassed the database is detectable by `audit/verify.py`.
 
 `append()` is the only writer. There is deliberately no update and no delete method.
 """
 
 from __future__ import annotations
 
-import sqlite3
-from pathlib import Path
+import sys
+from typing import Any
 
+from db.postgres import Database, get_database
+from shared.config import get_settings
 from shared.schemas import GENESIS_HASH, AuditAction, AuditEntry
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS audit_entries (
-    seq     INTEGER PRIMARY KEY,
-    payload TEXT NOT NULL,
-    hash    TEXT NOT NULL
-);
-CREATE TRIGGER IF NOT EXISTS audit_entries_no_update
-BEFORE UPDATE ON audit_entries
-BEGIN
-    SELECT RAISE(ABORT, 'audit log is append-only: UPDATE is forbidden');
-END;
-CREATE TRIGGER IF NOT EXISTS audit_entries_no_delete
-BEFORE DELETE ON audit_entries
-BEGIN
-    SELECT RAISE(ABORT, 'audit log is append-only: DELETE is forbidden');
-END;
-"""
+# Serialises appends across processes: the chain needs a strict order of seq numbers, and two
+# workers must never pick the same one.
+_APPEND_LOCK_KEY = 913_245_771
+
+
+def _under_test() -> bool:
+    return "pytest" in sys.modules
 
 
 class AuditLog:
-    """One SQLite file, one table, write-once rows."""
+    """One table, write-once rows, in PostgreSQL."""
 
-    def __init__(self, path: str | Path = "data/audit.db") -> None:
-        self.path = Path(path)
-        if str(self.path) != ":memory:":
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.path), isolation_level=None)
-        self._conn.execute("PRAGMA foreign_keys = ON")
-        self._conn.executescript(_SCHEMA)
+    def __init__(self, dsn: str | None = None, *, schema: str = "public") -> None:
+        self._db = Database(dsn, schema=schema) if dsn else get_database()
 
+    # ------------------------------------------------------------------ lifecycle
     def close(self) -> None:
-        self._conn.close()
+        self._db.close()
 
     def __enter__(self) -> AuditLog:
         return self
@@ -55,62 +44,108 @@ class AuditLog:
     def __exit__(self, *exc: object) -> None:
         self.close()
 
+    # ------------------------------------------------------------------ writing
     def _last(self) -> tuple[int, str]:
-        row = self._conn.execute(
-            "SELECT seq, hash FROM audit_entries ORDER BY seq DESC LIMIT 1"
-        ).fetchone()
-        return (0, GENESIS_HASH) if row is None else (int(row[0]), str(row[1]))
+        row = self._db.fetch_one("SELECT seq, hash FROM audit_entries ORDER BY seq DESC LIMIT 1")
+        return (0, GENESIS_HASH) if row is None else (int(row["seq"]), str(row["hash"]))
 
     def append(self, *, actor: str, action: AuditAction, **fields: object) -> AuditEntry:
         """The only writer: seals the row and links it to its predecessor."""
-        seq, prev_hash = self._last()
-        entry = AuditEntry(
-            seq=seq + 1, actor=actor, action=action, prev_hash=prev_hash, **fields
-        ).seal()
-        self._conn.execute("BEGIN IMMEDIATE")
-        try:
-            self._conn.execute(
-                "INSERT INTO audit_entries (seq, payload, hash) VALUES (?, ?, ?)",
-                (entry.seq, entry.canonical_payload(), entry.hash),
+        if _under_test() and self._db.schema == get_settings().db_schema:
+            raise RuntimeError(
+                "refusing to append to the application schema from a test: use the db_context "
+                "fixture (or pass schema=...) so the demo chain is never touched"
             )
-            self._conn.execute("COMMIT")
-        except Exception:
-            self._conn.execute("ROLLBACK")
-            raise
+        with self._db.connection() as conn:
+            with conn.transaction():
+                with conn.cursor() as cur:
+                    cur.execute("SELECT pg_advisory_xact_lock(%s)", (_APPEND_LOCK_KEY,))
+                    cur.execute("SELECT seq, hash FROM audit_entries ORDER BY seq DESC LIMIT 1")
+                    row = cur.fetchone()
+                    seq, prev_hash = (
+                        (0, GENESIS_HASH)
+                        if row is None
+                        else (
+                            int(row["seq"]),
+                            str(row["hash"]),
+                        )
+                    )
+                    entry = AuditEntry(
+                        seq=seq + 1, actor=actor, action=action, prev_hash=prev_hash, **fields
+                    ).seal()
+                    cur.execute(
+                        "INSERT INTO audit_entries (seq, payload, hash) VALUES (%s, %s, %s)",
+                        (entry.seq, entry.canonical_payload(), entry.hash),
+                    )
+            conn.commit()
         return entry
 
+    # ------------------------------------------------------------------ reading
     def entries(self) -> list[AuditEntry]:
-        rows = self._conn.execute("SELECT payload, hash FROM audit_entries ORDER BY seq").fetchall()
         out: list[AuditEntry] = []
-        for payload, stored_hash in rows:
-            entry = AuditEntry.model_validate_json(payload)
-            out.append(entry.model_copy(update={"hash": stored_hash}))
+        for row in self._db.fetch_all("SELECT payload, hash FROM audit_entries ORDER BY seq"):
+            entry = AuditEntry.model_validate_json(str(row["payload"]))
+            out.append(entry.model_copy(update={"hash": str(row["hash"])}))
         return out
+
+    def read_entries(self) -> tuple[list[AuditEntry], list[int]]:
+        """Tolerant read: one unparsable row is reported, never fatal.
+
+        The chain is still broken - `verify_log` is what says so - but a single corrupt row must
+        not take the whole dashboard down. Callers show the returned seq numbers to the reviewer.
+        """
+        entries: list[AuditEntry] = []
+        corrupt: list[int] = []
+        for row in self._db.fetch_all("SELECT seq, payload, hash FROM audit_entries ORDER BY seq"):
+            try:
+                entry = AuditEntry.model_validate_json(str(row["payload"]))
+            except ValueError:
+                corrupt.append(int(row["seq"]))
+                continue
+            entries.append(entry.model_copy(update={"hash": str(row["hash"])}))
+        return entries, corrupt
 
     def raw_entries(self) -> list[tuple[int, str, str]]:
         """(seq, payload, hash) exactly as stored, for the verifier."""
         return [
-            (int(seq), str(payload), str(stored))
-            for seq, payload, stored in self._conn.execute(
+            (int(row["seq"]), str(row["payload"]), str(row["hash"]))
+            for row in self._db.fetch_all(
                 "SELECT seq, payload, hash FROM audit_entries ORDER BY seq"
             )
         ]
 
     def count(self) -> int:
-        row = self._conn.execute("SELECT COUNT(*) FROM audit_entries").fetchone()
-        return int(row[0])
+        row = self._db.fetch_one("SELECT count(*) AS n FROM audit_entries")
+        return int(row["n"]) if row else 0
+
+    def table_counts(self) -> dict[str, int]:
+        return self._db.table_counts(["audit_entries"])
 
 
 _DEFAULT: AuditLog | None = None
 
 
-def get_log(path: str | Path | None = None) -> AuditLog:
+def get_log(dsn: str | None = None) -> AuditLog:
     """Process-wide log, so the workflow service and the API see the same rows."""
     global _DEFAULT
-    if path is not None:
-        return AuditLog(path)
+    if dsn is not None:
+        return AuditLog(dsn)
     if _DEFAULT is None:
-        from shared.config import get_settings
-
-        _DEFAULT = AuditLog(get_settings().audit_db_path)
+        _DEFAULT = AuditLog()
     return _DEFAULT
+
+
+def reset_log_singleton() -> None:
+    """Tests switch databases; this drops the cached process-wide log."""
+    global _DEFAULT
+    _DEFAULT = None
+
+
+def database_of(log: AuditLog) -> Database:
+    """The database behind a log, for health checks and row counts."""
+    return log._db  # noqa: SLF001 - same package, deliberately simple
+
+
+def append_fields(entry: AuditEntry) -> dict[str, Any]:
+    """The fields of an entry as a plain dict (used by the API layer)."""
+    return entry.model_dump(mode="json")

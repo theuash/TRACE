@@ -74,7 +74,7 @@ npx playwright test
 | `/filings/:id` | Filing detail | Metrics / Validation / Workflow / Accuracy tabs |
 | `/accuracy` | Accuracy | Final vs original accuracy, auto-approval accuracy, precision, recall, per-metric table, CSV export |
 | `/audit` | Audit log | Append-only rows, hash-chain verification, row drawer |
-| `/settings` | Settings | Data source, policy defaults, demo controls, appearance, danger zone |
+| `/settings` | Settings | Data source, policy defaults, data store, appearance |
 
 ---
 
@@ -90,56 +90,35 @@ Methods:
 
 - `health()`
 - `listCompanies()`
-- `startAudit({ cik, confidence_threshold, yoy_threshold_pct, demo_only })`
+- `startAudit({ cik, confidence_threshold, yoy_threshold_pct })`
 - `listThreads()`
 - `getStatus(threadId)`
 - `getTimeline(threadId)`
 - `resume(threadId, { decisions })`
 - `listAuditLogs(filters)`
 - `verifyChain()`
+- `getReport()`, `getThresholds()`, `setThresholds()`, `estimateEscalations()`
+- `getDatabase()`, `pingDatabase()`
 
-Plus demo/dev controls required by the acceptance flow:
+### Implementation
 
-- `resetDemo()`
-- `tamperWithLastRow()`
-- `setFailureMode(enabled)`
+| Implementation | Path |
+|---|---|
+| HTTP | [`src/api/http.ts`](src/api/http.ts) |
 
-### Implementations
-
-| Implementation | Path | Default |
-|---|---|---|
-| Mock | [`src/api/mock/`](src/api/mock/) | **Yes** |
-| HTTP | [`src/api/http.ts`](src/api/http.ts) | No |
-
-Switch with the `VITE_API_MODE` environment variable:
+The dashboard always talks to the real backend:
 
 ```bash
-VITE_API_MODE=mock    # default — fully in-browser demo server
-VITE_API_MODE=http    # real backend at VITE_API_BASE (default http://127.0.0.1:8000)
+VITE_API_BASE=http://127.0.0.1:8000
 ```
 
 The UI imports only the `TraceApi` interface; never an implementation.
 
-### Mock behaviours
+### Data honesty
 
-- Five companies seeded: Apple (`AAPL`), Microsoft (`MSFT`), NVIDIA (`NVDA`), Tesla (`TSLA`),
-  Amazon (`AMZN`).
-- Eight metrics per company (revenue, net income, total assets, total liabilities, shareholders'
-  equity, operating cash flow, cash and cash equivalents, research and development).
-- Start-audit pipeline advances through the workflow steps with realistic latency, then either
-  completes or pauses at the human-review checkpoint.
-- Flagged mix: Apple `Revenue` (`EXTRACTION_RISK`, HIGH), Tesla `Revenue` (`FINANCIAL_ANOMALY`, HIGH),
-  Amazon `Operating Cash Flow` (`EXTRACTION_RISK`, MEDIUM). NVDA and MSFT have no flags.
-- Resume applies decisions, appends SHA-256 hash-chain audit rows, then completes with an accuracy
-  report computed from fixtures.
-- State persists in `localStorage` (checkpoint/resume).
-- `verifyChain()` recomputes hashes; `tamperWithLastRow()` breaks the chain for the tamper demo.
-- Failure simulation toggle for error states.
-
-### Honest demo indicator
-
-While in mock mode the top bar and sidebar show a subtle **"Demo data"** pill. In HTTP mode it shows
-**Live**. Mock numbers are never presented as live SEC results.
+The sidebar shows a **Live data** badge. Every number on screen comes from the real workflow:
+filings are read from the cached SEC HTML, verification against XBRL Company Facts happens in
+the backend, and the audit chain is owned by the database.
 
 ---
 
@@ -156,7 +135,6 @@ While in mock mode the top bar and sidebar show a subtle **"Demo data"** pill. I
 
 - Company cards (multi-select).
 - Confidence threshold slider (default 0.85), YoY tolerance slider (default 30%).
-- "Demo: force pause" switch (clearly labelled demo preset).
 - Run audit / Run all companies.
 - Live nine-step workflow stepper with state per step, timestamps, and a
   **"Paused at checkpoint"** chip linking to the review queue.
@@ -185,7 +163,6 @@ While in mock mode the top bar and sidebar show a subtle **"Demo data"** pill. I
 - Final accuracy, original accuracy, auto-approval accuracy, auto-approved vs. escalated counts.
 - Escalation precision overall and by type, escalation recall.
 - Per-metric accuracy table, bar chart, CSV export.
-- Demo-only runs excluded by default with a visible toggle.
 - "How these numbers are computed" expander.
 
 ### Audit log
@@ -196,21 +173,10 @@ While in mock mode the top bar and sidebar show a subtle **"Demo data"** pill. I
 
 ### Settings
 
-- Data source mode + connection test (http mode).
+- Data source status + connection test.
 - Policy defaults.
-- Reset demo data, simulate failure, tamper with last row (mock only), theme.
-
----
-
-## Guided demo
-
-Open the **Guided demo** from the top bar:
-
-1. Run a demo audit (Apple, force-pause).
-2. Inspect a flagged item.
-3. Make a decision.
-4. View accuracy.
-5. Verify the audit chain.
+- Data store panel (backend, host, row counts, ping).
+- Theme.
 
 ---
 
@@ -237,14 +203,17 @@ Open the **Guided demo** from the top bar:
 ## Acceptance
 
 - `npm run build` passes with zero TypeScript errors.
-- `npx playwright test` passes (full mock e2e lifecycle).
+- `npx playwright test` passes against the real backend (full reviewer journey).
 - Lighthouse accessibility ≥ 90 on the review queue (target; not yet measured in this environment).
-- Switching `VITE_API_MODE=http` only changes the data source, never the UI code.
 
 ---
 
 ## Not included / roadmap
 
-- Real backend wiring for all verification, workflow, audit, validation modules.
-- Threshold sliders with live `estimate_escalations` before/after.
-- "Corrupt a value" fault injection via `FaultSpec` in `RunRequest`.
+- Threshold sliders with live `estimate_escalations` before/after (`POST /thresholds/estimate` is live; the UI slider is not wired yet).
+- Adaptive threshold *suggestions* from reviewer behaviour (must stay human-applied and audited).
+
+### What the backend now serves
+
+`api/main:app` implements every route in this contract against `workflow.service`.
+The translation from workflow contracts to these JSON shapes lives in `api/adapters.py`.

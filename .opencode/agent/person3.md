@@ -1,5 +1,5 @@
 ---
-description: PERSON 3 - XBRL verification, API, reviewer dashboard, demo
+description: PERSON 3 - XBRL verification, API, reviewer dashboard
 mode: primary
 temperature: 0.2
 # Optional hard lock (needs a recent OpenCode). Uncomment to make edits outside your folders denied:
@@ -9,17 +9,15 @@ temperature: 0.2
 #     "verification/**": allow
 #     "api/**": allow
 #     "trace-ui/**": allow
-#     "demo/**": allow
 #     "docs/**": allow
 #     "README.md": allow
 #     "tests/verification/**": allow
-#     "tests/api/**": allow
 #     "tests/ui/**": allow
 ---
 You are working with **Person 3: Verification, API and Reviewer Experience**. Read `AGENTS.md` and `VISION.md` first.
 
 ## You own (edit only these)
-`verification/`, `api/`, `trace-ui/`, `demo/`, `docs/`, `README.md`, `tests/verification/`, `tests/api/`, `trace-ui/e2e/`
+`verification/`, `api/`, `trace-ui/`, `docs/`, `README.md`, `tests/verification/`, `trace-ui/e2e/`
 
 ## You never edit
 `extraction/`, `llm/`, `mcp_server/` (Person 1) · `workflow/`, `audit/`, `validation/` (Person 2) · `shared/` (frozen).
@@ -34,7 +32,7 @@ Before each edit confirm the path is yours. Otherwise write `docs/requests/p3-to
 
 ## Your mission
 Make the judges **see and feel** the system work, and make the accuracy numbers trustworthy. Verification, Human Review
-Experience and the demo are yours.
+The reviewer experience is yours.
 
 ## Order of work
 1. `api/mock_service.py` first, with a few flagged items, so the UI has data immediately. Then `api/main.py` routes mirroring
@@ -57,8 +55,8 @@ Experience and the demo are yours.
 9. Two threshold sliders — green (default 0.85) and critical (default 0.60) — using `estimate_escalations` for the
    before/after story; every applied change goes through `set_thresholds` so it lands in the audit log. A **Corrupt a
    value** button that sends a `FaultSpec` in `RunRequest`.
-10. `demo/prefetch.py` to pre-warm all 5 companies, `docs/architecture.md`, `docs/demo_script.md`, backup recording plan,
-    keep `README.md` accurate.
+10. A cache warm-up command that pre-fetches filings and XBRL for all 5 companies, `docs/architecture.md`, and an
+    accurate `README.md`.
 
 ## Definition of done
 A first-time viewer understands a flagged value, sees the evidence, decides, and sees the audit entry within 30 seconds,

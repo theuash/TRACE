@@ -1,28 +1,19 @@
-import { LayoutDashboard, FilePlus2, ListChecks, FolderOpen, Gauge, ScrollText, Settings } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useThreads, useDataMode } from "@/hooks/use-trace";
+import { useThreads } from "@/hooks/use-trace";
 import { useTheme } from "@/components/theme-provider";
+import { pendingItemCount, dataModeLabel, dataModeTone } from "@/lib/threads";
+import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { to: "/overview", label: "Overview", icon: LayoutDashboard },
-  { to: "/new", label: "New audit", icon: FilePlus2 },
-  { to: "/review", label: "Review queue", icon: ListChecks },
-  { to: "/filings", icon: FolderOpen, label: "Filings" },
-  { to: "/accuracy", label: "Accuracy", icon: Gauge },
-  { to: "/audit", label: "Audit log", icon: ScrollText },
-  { to: "/settings", label: "Settings", icon: Settings },
-];
+const navItems = NAV_ITEMS;
 
 export function Sidebar() {
   const location = useLocation();
-  const { mode } = useDataMode();
   const { theme, toggleTheme } = useTheme();
   const { data: threads } = useThreads();
-
-  const pendingCount = (threads ?? []).filter(
-    (t) => t.status === "PAUSED_FOR_REVIEW" || t.status === "HUMAN_REVIEWED"
-  ).length;
+  const pendingCount = pendingItemCount(threads);
+  const dataLabel = dataModeLabel();
+  const dataTone = dataModeTone();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-card md:flex">
@@ -62,11 +53,11 @@ export function Sidebar() {
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",
-              mode === "mock" ? "bg-warning/15 text-warning" : "bg-success/15 text-success"
+              dataTone
             )}
             data-testid="data-mode"
           >
-            {mode === "mock" ? "Demo data" : "Live"}
+            {dataLabel}
           </span>
         </div>
         <button

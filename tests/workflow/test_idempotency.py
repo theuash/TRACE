@@ -1,8 +1,8 @@
 from workflow.idempotency import IdempotencyStore
 
 
-def test_side_effect_runs_once_and_replays(tmp_path):
-    store = IdempotencyStore(tmp_path / "idem.db")
+def test_side_effect_runs_once_and_replays(postgres):
+    store = IdempotencyStore(postgres.dsn, schema=postgres.schema)
     calls = {"n": 0}
 
     def effect():

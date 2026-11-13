@@ -65,3 +65,21 @@ export function ConfidenceBadge({ confidence, label }: { confidence: number; lab
     </span>
   );
 }
+
+/**
+ * Risk tier. The tier is computed by the workflow (confidence AND validation results) and sent
+ * by the API - the UI only colours it, it never decides it.
+ */
+export function TierBadge({ tier }: { tier?: "red" | "yellow" | "green" }) {
+  if (!tier) return null;
+  const config = {
+    red: { label: "Critical", className: "bg-danger text-danger-foreground" },
+    yellow: { label: "Review", className: "bg-warning/20 text-warning" },
+    green: { label: "Low risk", className: "bg-success/15 text-success" },
+  }[tier];
+  return (
+    <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", config.className)} data-testid={`tier-${tier}`}>
+      {config.label}
+    </span>
+  );
+}

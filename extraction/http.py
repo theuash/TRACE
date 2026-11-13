@@ -64,7 +64,7 @@ def fetch_json(url: str, cache_path: Path) -> Any:
 
 
 def reset_client() -> None:
-    """Tests and demos use this to drop a stale connection."""
+    """Tests use this to drop a stale connection."""
     global _client
     if _client is not None:
         _client.close()

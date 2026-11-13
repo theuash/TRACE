@@ -16,7 +16,7 @@ from shared.schemas import Company, Thresholds
 
 PLACEHOLDER_USER_AGENT = "Your Name your.email@example.com"
 
-# The five demo companies. CIKs are well known but VERIFY them on EDGAR before relying on them
+# The five companies. CIKs are well known but VERIFY them on EDGAR before relying on them
 # (https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=AAPL).
 COMPANIES: list[Company] = [
     Company(ticker="AAPL", name="Apple Inc.", cik="0000320193"),
@@ -26,12 +26,34 @@ COMPANIES: list[Company] = [
     Company(ticker="AMZN", name="Amazon.com, Inc.", cik="0001018724"),
 ]
 
+# Companies resolved from the SEC directory at runtime (any ticker, not just the five above).
+_EXTRA: dict[str, Company] = {}
+
+
+def register_company(company: Company) -> Company:
+    """Remember a company resolved from the SEC directory.
+
+    The workflow resolves tickers through `get_company`, so a company outside the five has to be
+    registered before its run starts. Registration is per process and additive only.
+    """
+    _EXTRA[company.ticker.upper()] = company
+    return company
+
 
 def get_company(ticker: str) -> Company:
+    extra = _EXTRA.get(ticker.upper())
+    if extra is not None:
+        return extra
     for c in COMPANIES:
         if c.ticker == ticker.upper():
             return c
     raise KeyError(f"Unknown ticker {ticker!r}. Known: {[c.ticker for c in COMPANIES]}")
+
+
+def known_tickers() -> list[str]:
+    return [c.ticker for c in COMPANIES] + [
+        ticker for ticker in _EXTRA if ticker not in {c.ticker for c in COMPANIES}
+    ]
 
 
 class Settings(BaseSettings):
@@ -47,6 +69,19 @@ class Settings(BaseSettings):
     data_dir: Path = Path("./data")
     audit_db_path: Path = Path("./data/audit.db")
     checkpoint_db_path: Path = Path("./data/checkpoints.db")
+
+    # --- Database (Neon PostgreSQL)
+    # NEON_POOL_URL is the pooled connection string used by the running app (PgBouncer, many
+    # clients). NEON_DIRECT_URL is the direct one: DDL and migrations want a session, not a
+    # pooled transaction. If only the pooled URL is set, migrations still run - Neon allows
+    # DDL through the pooler - but a direct URL is preferred.
+    neon_pool_url: str | None = None
+    neon_direct_url: str | None = None
+    db_connect_timeout_s: float = 10.0
+    db_statement_timeout_ms: int = 15_000
+    db_pool_min_size: int = 1
+    db_pool_max_size: int = 5
+    db_schema: str = "public"
 
     # --- LLM (all providers are used through the OpenAI-compatible API)
     llm_provider: Literal["ollama", "groq", "gemini"] = "ollama"
@@ -68,7 +103,6 @@ class Settings(BaseSettings):
 
     # --- Development switches
     use_fakes: bool = False  # workflow uses workflow/fakes.py instead of real extraction/verification
-    use_mock_service: bool = False  # api serves api/mock_service.py instead of the real workflow
 
     # --- API
     api_host: str = "127.0.0.1"
@@ -87,6 +121,30 @@ class Settings(BaseSettings):
     @property
     def xbrl_dir(self) -> Path:
         return self.data_dir / "xbrl"
+
+    @property
+    def database_url(self) -> str | None:
+        """The URL the app uses.
+
+        The direct connection is preferred: the pooler adds a hop to every query and this
+        process makes a lot of small ones. The pooled URL is the fallback (and the right
+        choice for a serverless deployment).
+        """
+        return self.neon_direct_url or self.neon_pool_url
+
+    @property
+    def migration_database_url(self) -> str | None:
+        """The URL migrations use: direct when we have it, pooled otherwise."""
+        return self.neon_direct_url or self.neon_pool_url
+
+    @property
+    def database_host(self) -> str:
+        """Host name of the database, for display. Never includes credentials."""
+        url = self.database_url
+        if not url:
+            return "not configured"
+        host = url.split("://", 1)[-1].split("@", 1)[-1].split("/", 1)[0]
+        return host.split(":", 1)[0]
 
     def default_thresholds(self) -> Thresholds:
         return Thresholds(

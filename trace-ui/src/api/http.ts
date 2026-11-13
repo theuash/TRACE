@@ -7,10 +7,14 @@ import type {
   AuditLogRow,
   AuditStatus,
   CompanyInfo,
+  DatabaseInfo,
+  DatabaseStatus,
+  EscalationEstimate,
   HealthResponse,
   ResumePayload,
   StartAuditRequest,
   ThreadSummary,
+  Thresholds,
   VerifyResult,
 } from "./types";
 
@@ -36,6 +40,11 @@ export class HttpTraceApi implements TraceApi {
 
   async listCompanies(): Promise<CompanyInfo[]> {
     return request<CompanyInfo[]>("/companies");
+  }
+
+  async searchCompanies(query: string): Promise<CompanyInfo[]> {
+    // Any company on EDGAR, not just the five the demo configures.
+    return request<CompanyInfo[]>(`/companies/search?q=${encodeURIComponent(query)}`);
   }
 
   async startAudit(payload: StartAuditRequest): Promise<AuditStatus> {
@@ -71,16 +80,34 @@ export class HttpTraceApi implements TraceApi {
     return request<VerifyResult>("/audit-logs/verify");
   }
 
-  async resetDemo(): Promise<void> {
-    await request<void>("/demo/reset", { method: "POST", body: JSON.stringify({}) });
+  async getReport(): Promise<AccuracyReport | null> {
+    return request<AccuracyReport | null>("/report");
   }
 
-  async tamperWithLastRow(): Promise<VerifyResult> {
-    return request<VerifyResult>("/demo/tamper");
+  async getThresholds(): Promise<Thresholds> {
+    return request<Thresholds>("/thresholds");
   }
 
-  async setFailureMode(enabled: boolean): Promise<void> {
-    await request<void>("/demo/failure-mode", { method: "POST", body: JSON.stringify({ enabled }) });
+  async setThresholds(thresholds: Thresholds): Promise<Thresholds> {
+    return request<Thresholds>("/thresholds", {
+      method: "POST",
+      body: JSON.stringify(thresholds),
+    });
+  }
+
+  async estimateEscalations(thresholds: Thresholds): Promise<EscalationEstimate> {
+    return request<EscalationEstimate>("/thresholds/estimate", {
+      method: "POST",
+      body: JSON.stringify(thresholds),
+    });
+  }
+
+  async getDatabase(): Promise<DatabaseInfo> {
+    return request<DatabaseInfo>("/database");
+  }
+
+  async pingDatabase(): Promise<DatabaseStatus> {
+    return request<DatabaseStatus>("/database/ping", { method: "POST" });
   }
 }
 

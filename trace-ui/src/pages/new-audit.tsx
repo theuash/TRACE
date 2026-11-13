@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play, Layers } from "lucide-react";import { useCompanies, useStartAudit, useThreadStatus } from "@/hooks/use-trace";
+import { Play, Layers, Search } from "lucide-react";
+import { useCompanies, useCompanySearch, useStartAudit, useThreadStatus } from "@/hooks/use-trace";
+import type { CompanyInfo } from "@/api/types";
+import { Input } from "@/components/ui/input";
 import { WorkflowStepper } from "@/components/workflow-stepper";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -15,25 +17,34 @@ export function NewAuditPage() {
   const navigate = useNavigate();
   const { data: companies, isLoading } = useCompanies();
   const startAudit = useStartAudit();
+  const [query, setQuery] = useState("");
+  const search = useCompanySearch(query);
+  // Companies added from the SEC search: any ticker, not just the five the demo configures.
+  const [extra, setExtra] = useState<CompanyInfo[]>([]);
+
+  const available = useMemo(() => {
+    const configured = companies ?? [];
+    const known = new Set(configured.map((c) => c.cik));
+    return [...configured, ...extra.filter((c) => !known.has(c.cik))];
+  }, [companies, extra]);
 
   const [selected, setSelected] = useState<string[]>(["0000320193"]);
   const [confidence, setConfidence] = useState(0.85);
   const [yoy, setYoY] = useState(0.3);
-  const [demoOnly, setDemoOnly] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const activeStatus = useThreadStatus(activeThreadId);
 
   const runSingle = async (cik: string) => {
-    const result = await startAudit.mutateAsync({ cik, confidence_threshold: confidence, yoy_threshold_pct: yoy, demo_only: demoOnly });
+    const result = await startAudit.mutateAsync({ cik, confidence_threshold: confidence, yoy_threshold_pct: yoy });
     setActiveThreadId(result.thread_id);
   };
 
   const runAll = async () => {
-    const list = companies ?? [];
+    const list = available;
     const targets = list.filter((c) => selected.length === 0 || selected.includes(c.cik));
     const started: string[] = [];
     for (const c of targets) {
-      const result = await startAudit.mutateAsync({ cik: c.cik, confidence_threshold: confidence, yoy_threshold_pct: yoy, demo_only: demoOnly });
+      const result = await startAudit.mutateAsync({ cik: c.cik, confidence_threshold: confidence, yoy_threshold_pct: yoy });
       started.push(result.thread_id);
     }
     if (started.length > 0) setActiveThreadId(started[started.length - 1]);
@@ -54,8 +65,54 @@ export function NewAuditPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? <div className="h-32 animate-pulse rounded-lg bg-muted" /> : null}
+            <div className="relative mb-4">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Audit any company: ticker or name (from SEC EDGAR)"
+                aria-label="Search any company on EDGAR"
+                className="pl-9"
+                data-testid="company-search"
+              />
+              {query.trim().length >= 2 ? (
+                <div className="mt-2 max-h-56 overflow-y-auto rounded-xl border bg-card">
+                  {search.isLoading ? (
+                    <p className="p-3 text-xs text-muted-foreground">Searching EDGAR…</p>
+                  ) : null}
+                  {search.isError ? (
+                    <p className="p-3 text-xs text-danger">SEC directory unavailable. The five configured companies still work.</p>
+                  ) : null}
+                  {search.data?.length === 0 && !search.isLoading ? (
+                    <p className="p-3 text-xs text-muted-foreground">No company matched “{query.trim()}”.</p>
+                  ) : null}
+                  {(search.data ?? []).map((c) => {
+                    const added = available.some((a) => a.cik === c.cik);
+                    return (
+                      <button
+                        key={c.cik}
+                        type="button"
+                        disabled={added}
+                        onClick={() => {
+                          setExtra((prev) => [...prev, c]);
+                          setSelected((prev) => (prev.includes(c.cik) ? prev : [...prev, c.cik]));
+                          setQuery("");
+                        }}
+                        className="flex w-full items-center justify-between gap-3 border-b px-3 py-2 text-left text-sm last:border-0 hover:bg-accent/50 disabled:opacity-50"
+                        data-testid={`company-result-${c.ticker}`}
+                      >
+                        <span className="truncate">{c.name}</span>
+                        <span className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+                          {c.ticker} · CIK {c.cik}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              {(companies ?? []).map((c) => (
+              {available.map((c) => (
                 <button
                   key={c.cik}
                   type="button"
@@ -108,13 +165,6 @@ export function NewAuditPage() {
               <Slider id="yoy-threshold" min={0} max={0.8} step={0.01} value={[yoy]} onValueChange={(v) => setYoY(v[0])} />
               <p className="mt-1 text-xs text-muted-foreground">Larger year-over-year deviations escalate for financial anomaly review.</p>
             </div>
-            <div className="flex items-center justify-between rounded-xl border p-4">
-              <div>
-                <div className="text-sm font-medium">Demo: force pause</div>
-                <div className="text-xs text-muted-foreground">Always pause before human review. Demo preset, excluded from headline metrics.</div>
-              </div>
-              <Switch checked={demoOnly} onCheckedChange={setDemoOnly} aria-label="Demo force pause" />
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -127,7 +177,6 @@ export function NewAuditPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               {threadStatus ? <StatusBadge status={threadStatus.status} /> : <Badge variant="secondary">Starting…</Badge>}
-              {threadStatus?.demo_only ? <Badge variant="outline">Demo preset</Badge> : null}
             </div>
             <WorkflowStepper status={threadStatus?.status ?? "STARTED"} />
             {threadStatus?.status === "PAUSED_FOR_REVIEW" ? (
